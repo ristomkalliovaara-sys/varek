@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Varek — Skill Reference</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0e0e14;color:#c8c0b0;font-family:'Georgia',serif;min-height:100vh}
+a{color:inherit;text-decoration:none}
+
+/* ── Header ── */
+header{background:#0a0a10;border-bottom:1px solid #2a2a3d;padding:18px 32px;display:flex;align-items:baseline;gap:16px}
+header h1{color:#c9a84c;font-size:1.5rem;letter-spacing:.08em;font-weight:normal}
+header span{color:#6a6480;font-size:.85rem;letter-spacing:.04em}
+
+/* ── Layout ── */
+.layout{display:flex;min-height:calc(100vh - 57px)}
+
+/* ── Sidebar ── */
+nav.sidebar{width:180px;min-width:180px;background:#0a0a10;border-right:1px solid #1e1e2e;padding:20px 0;position:sticky;top:0;height:calc(100vh - 57px);overflow-y:auto}
+nav.sidebar button{display:block;width:100%;text-align:left;padding:10px 20px;background:none;border:none;color:#8a8098;cursor:pointer;font-family:'Georgia',serif;font-size:.9rem;transition:color .15s,background .15s;border-left:3px solid transparent}
+nav.sidebar button:hover{color:#c8c0b0;background:#141420}
+nav.sidebar button.active{color:#c9a84c;border-left-color:#c9a84c;background:#141420}
+.cat-count{float:right;font-size:.75rem;color:#4a4458;margin-top:1px}
+
+/* ── Main ── */
+main{flex:1;padding:24px 28px;overflow-y:auto}
+.section-title{color:#6a6480;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px;padding-bottom:6px;border-bottom:1px solid #1e1e2e}
+
+/* ── Skill Grid ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:32px}
+
+/* ── Skill Card ── */
+.card{background:#141420;border:1px solid #1e1e2e;border-radius:4px;padding:14px 16px;cursor:pointer;transition:border-color .15s,background .15s;position:relative}
+.card:hover{border-color:#3a3a5a;background:#181828}
+.card-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-right:66px}
+.card-icon{font-size:1.4rem;line-height:1;width:32px;text-align:center}
+.card-name{color:#d4c9b0;font-size:.95rem;font-weight:normal;flex:1}
+.card-slots{font-size:.72rem;color:#8a8098;margin-top:2px}
+.slot-pip{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2a2a3d;margin-right:2px}
+.slot-pip.filled{background:#c9a84c}
+.card-summary{font-size:.78rem;color:#7a7288;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cat-badge{position:absolute;top:10px;right:10px;font-size:.65rem;padding:2px 6px;border-radius:2px;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
+
+/* Category badge colors */
+.badge-combat{background:#3d1212;color:#e07070}
+.badge-physical{background:#12301a;color:#70c080}
+.badge-crafting{background:#3d2410;color:#e09040}
+.badge-knowledge{background:#251040;color:#9060d0}
+.badge-social{background:#10253d;color:#5090d0}
+.badge-magic{background:#2d2510;color:#c9a84c}
+.badge-special{background:#202030;color:#9090c0}
+
+/* ── Modal ── */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{background:#131320;border:1px solid #2a2a3d;border-radius:6px;max-width:740px;width:100%;max-height:90vh;overflow-y:auto;position:relative}
+.modal-header{padding:22px 26px 16px;border-bottom:1px solid #1e1e2e;display:flex;align-items:center;gap:14px}
+.modal-icon{font-size:2rem;line-height:1}
+.modal-title{flex:1}
+.modal-title h2{color:#c9a84c;font-size:1.25rem;font-weight:normal;margin-bottom:4px}
+.modal-meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.modal-cat{font-size:.72rem;padding:2px 8px;border-radius:2px;letter-spacing:.06em;text-transform:uppercase}
+.modal-slots{font-size:.82rem;color:#8a8098}
+.modal-atrophy{font-size:.72rem;padding:2px 7px;border-radius:2px}
+.atrophy-none{background:#12301a;color:#70c080}
+.atrophy-slow{background:#2d2000;color:#c08040}
+.atrophy-moderate{background:#2d1800;color:#d06030}
+.atrophy-fast{background:#2d1010;color:#e05050}
+.modal-close{background:none;border:none;color:#6a6480;cursor:pointer;font-size:1.4rem;padding:4px 8px;transition:color .15s;align-self:flex-start}
+.modal-close:hover{color:#c9a84c}
+.modal-body{padding:20px 26px}
+.modal-summary{color:#b0a898;line-height:1.7;margin-bottom:20px;font-size:.92rem}
+.modal-section{margin-bottom:20px}
+.modal-section-label{color:#6a6480;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.discovery-text{color:#8a8098;font-size:.85rem;line-height:1.6;font-style:italic}
+.cost-text{color:#c08040;font-size:.85rem;line-height:1.6}
+
+/* Tier table */
+.tier-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.tier-table tr{border-bottom:1px solid #1a1a28}
+.tier-table tr:last-child{border-bottom:none}
+.tier-table td{padding:7px 10px;vertical-align:top}
+.tier-name{color:#c9a84c;width:100px;white-space:nowrap;font-size:.8rem}
+.tier-desc{color:#9a9298;line-height:1.5}
+
+/* Combinations */
+.combo-list{list-style:none}
+.combo-list li{color:#8a8098;font-size:.83rem;line-height:1.5;padding:4px 0;border-bottom:1px solid #1a1a28}
+.combo-list li:last-child{border-bottom:none}
+.combo-list li::before{content:'◆ ';color:#3a3a5a;font-size:.65rem}
+
+/* Faction table */
+.faction-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.faction-table tr{border-bottom:1px solid #1a1a28}
+.faction-table tr:last-child{border-bottom:none}
+.faction-table td{padding:6px 10px;vertical-align:top}
+.faction-name{color:#c9a84c;width:160px;white-space:nowrap}
+.faction-react{color:#8a8098;line-height:1.5}
+
+/* Search */
+.search-wrap{margin-bottom:20px}
+.search-wrap input{width:100%;background:#141420;border:1px solid #2a2a3d;border-radius:3px;padding:9px 14px;color:#c8c0b0;font-family:'Georgia',serif;font-size:.9rem;outline:none;transition:border-color .15s}
+.search-wrap input:focus{border-color:#3a3a5a}
+.search-wrap input::placeholder{color:#4a4458}
+
+/* No results */
+.no-results{color:#4a4458;text-align:center;padding:40px;font-style:italic}
+
+/* Responsive */
+@media(max-width:600px){
+  nav.sidebar{width:140px;min-width:140px}
+  main{padding:16px}
+  .modal{max-width:100%;max-height:100vh;border-radius:0}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>VAREK</h1>
+  <span>Skill Reference — <span id="total-count">0</span> skills</span>
+</header>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main>
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="Search skills…" autocomplete="off">
+    </div>
+    <div id="content"></div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" id="modal-box">
+    <div class="modal-header">
+      <div class="modal-icon" id="m-icon"></div>
+      <div class="modal-title">
+        <h2 id="m-name"></h2>
+        <div class="modal-meta">
+          <span class="modal-cat" id="m-cat"></span>
+          <span class="modal-slots" id="m-slots"></span>
+          <span class="modal-atrophy" id="m-atrophy"></span>
+        </div>
+      </div>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-summary" id="m-summary"></div>
+      <div class="modal-section" id="m-discovery-wrap">
+        <div class="modal-section-label">Discovery</div>
+        <div class="discovery-text" id="m-discovery"></div>
+      </div>
+      <div class="modal-section" id="m-cost-wrap">
+        <div class="modal-section-label">Cost</div>
+        <div class="cost-text" id="m-cost"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-label">Tiers</div>
+        <table class="tier-table" id="m-tiers"></table>
+      </div>
+      <div class="modal-section" id="m-combos-wrap">
+        <div class="modal-section-label">Combinations</div>
+        <ul class="combo-list" id="m-combos"></ul>
+      </div>
+      <div class="modal-section" id="m-factions-wrap">
+        <div class="modal-section-label">Faction Reactions</div>
+        <table class="faction-table" id="m-factions"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var CATEGORIES = [
+  { id:'all',      label:'All Skills' },
+  { id:'combat',   label:'Combat' },
+  { id:'physical', label:'Physical' },
+  { id:'crafting', label:'Crafting' },
+  { id:'knowledge',label:'Knowledge' },
+  { id:'social',   label:'Social' },
+  { id:'magic',    label:'Magic' },
+  { id:'special',  label:'Special' }
+];
+
+var CAT_BADGE = {
+  combat:'combat', physical:'physical', crafting:'crafting',
+  knowledge:'knowledge', social:'social', magic:'magic', special:'special'
+};
+
+var ATROPHY_LABEL = { none:'Permanent', slow:'Slow fade', moderate:'Moderate fade', fast:'Fast fade' };
+
+var SKILLS = [
+  // ─── COMBAT ─────────────────────────────────────────────────────────────
+  {
+    id:'swordsmanship', name:'Swordsmanship', icon:'⚔', category:'combat', slots:1, atrophy:'slow',
+    discovery:'Pick up any blade longer than a dagger. Begin using it.',
+    summary:'The most common weapon in Varek and the most practiced. Balanced offense, balanced defense. No dominant strength, no significant weakness. The sword does not specialise — it answers whatever the moment requires.',
+    tiers:[
+      {name:'Novice',    desc:'Wide cuts and obvious guards. You connect more than you miss. That is the whole of it.'},
+      {name:'Apprentice',desc:'Basic combinations. You stop telegraphing every intention. Parry and counter begins to feel natural.'},
+      {name:'Journeyman',desc:'Economy of motion. Opponents spend effort reading you that you no longer need to spend on them.'},
+      {name:'Expert',    desc:'Others notice. The footwork is doing half the work before the blade arrives.'},
+      {name:'Master',    desc:'Stillness before violence. Experienced practitioners identify the school from twenty feet away, before anything is drawn.'}
+    ]
+  },
+  {
+    id:'axes', name:'Axes', icon:'🪓', category:'combat', slots:1, atrophy:'slow',
+    discovery:'Use any axe — woodcutting or battlefield — in a context requiring force.',
+    summary:'Slow to swing. Difficult to fully block. An axe ignores some armour, hooks shields, and degrades enemy weapons on contact. The weapon of those who prefer to dismantle a defence rather than outmanoeuvre it.',
+    tiers:[
+      {name:'Novice',    desc:'Heavy and telegraphed. You swing and trust the weight to do the work.'},
+      {name:'Apprentice',desc:'You stop fighting the weight. Timing becomes a tool.'},
+      {name:'Journeyman',desc:'Shield hooks. Weapon-binding. You use the beard to open what a straight blade would not reach.'},
+      {name:'Expert',    desc:'Armour becomes less relevant. You find the angle that defeats it.'},
+      {name:'Master',    desc:'One strike answers questions a sword would spend three asking.'}
+    ]
+  },
+  {
+    id:'spears', name:'Spears', icon:'🔱', category:'combat', slots:1, atrophy:'slow',
+    discovery:'Use any polearm — spear, halberd, pike — in combat or practice.',
+    summary:'Reach is the advantage. A spear-user who understands distance controls engagements before they begin. Formations of spears have stopped cavalry charges. A single expert has made an armoured knight refuse to close.',
+    tiers:[
+      {name:'Novice',    desc:'The reach advantage is real. You do not know how to use it yet.'},
+      {name:'Apprentice',desc:'Distance management. Opponents on short weapons struggle to close.'},
+      {name:'Journeyman',desc:'Formation discipline. You understand that a spear performs in a line, not alone.'},
+      {name:'Expert',    desc:'You brace for cavalry. You set for a charge. Distance is a weapon that does not run out.'},
+      {name:'Master',    desc:'The footwork that maintains reach. No one enters inside unless you choose to allow it.'}
+    ]
+  },
+  {
+    id:'bows', name:'Bows', icon:'🏹', category:'combat', slots:1, atrophy:'slow',
+    discovery:'Draw and loose a bow at any target, in practice or earnest.',
+    summary:'Sustained ranged capability. Moving while aiming is itself a skill — a beginner must stop to shoot; an expert walks, turns, and looses without breaking stride. Draw weight trades speed for damage.',
+    tiers:[
+      {name:'Novice',    desc:'Stationary shooting at close range. The arrow reaches the target. Often.'},
+      {name:'Apprentice',desc:'Range and moderate movement. You understand how draw weight affects accuracy.'},
+      {name:'Journeyman',desc:'Full movement while aiming. Snap-shooting. Predictive leading for moving targets.'},
+      {name:'Expert',    desc:'Elevation, wind, distance are variables you calculate without thinking.'},
+      {name:'Master',    desc:'The arrow arrives where attention is directed. The mechanical process has become invisible.'}
+    ]
+  },
+  {
+    id:'crossbows', name:'Crossbows', icon:'🎯', category:'combat', slots:1, atrophy:'slow',
+    discovery:'Load and fire any crossbow.',
+    summary:'No draw skill required. Devastating power, very slow reload. Near-useless at close range — if an enemy reaches you between shots, you have a problem.',
+    tiers:[
+      {name:'Novice',    desc:'Aim, fire, reload. The sequence is slower than it should be.'},
+      {name:'Apprentice',desc:'Reload efficiency improves. You learn to position for the gap between shots.'},
+      {name:'Journeyman',desc:'Effective range understanding. Bracing for maximum accuracy.'},
+      {name:'Expert',    desc:'Reload fast enough that some opponents do not realise a second shot is coming.'},
+      {name:'Master',    desc:'Mechanical mastery of the device itself — maintenance, modification, its exact limits.'}
+    ]
+  },
+  {
+    id:'shields', name:'Shields', icon:'🛡', category:'combat', slots:1, atrophy:'slow',
+    discovery:'Use any shield in a combat situation.',
+    summary:'A shield is not passive defence. An expert uses it to control space, set angles, and create openings. Used with an axe it hooks and pries. Used with a spear it becomes a wall. The shield practitioner manages rather than simply absorbs.',
+    tiers:[
+      {name:'Novice',    desc:'Interpose the shield between yourself and the threat. This works more often than nothing.'},
+      {name:'Apprentice',desc:'Angling for deflection. The shield turns blows rather than absorbing them.'},
+      {name:'Journeyman',desc:'Shield bashing as technique. Creating openings. Controlling opponent positioning.'},
+      {name:'Expert',    desc:'The shield as a weapon — feints, hooks, setting angles for your main hand.'},
+      {name:'Master',    desc:'Space control. A master shield practitioner does not have a defensive posture. They have a domain.'}
+    ]
+  },
+  {
+    id:'unarmed', name:'Unarmed', icon:'✊', category:'combat', slots:1, atrophy:'slow',
+    discovery:'Fight without a weapon. Not necessarily by choice.',
+    summary:'Grappling, strikes, joint manipulation. An unarmed practitioner can disarm, throw, pin, and incapacitate without killing. In a world where weapons are everywhere, choosing not to use one is a statement.',
+    tiers:[
+      {name:'Novice',    desc:'Wild swings. Grapples that rely on strength rather than technique.'},
+      {name:'Apprentice',desc:'Basic throws and joint locks. You can restrain a resisting person.'},
+      {name:'Journeyman',desc:'Disarms. Transitions between striking and grappling. Leverage over strength.'},
+      {name:'Expert',    desc:'Weapon grappling — taking a drawn weapon from someone who expected to use it.'},
+      {name:'Master',    desc:'Economy of force. The minimum applied exactly. An armed opponent is not automatically an advantage.'}
+    ]
+  },
+  {
+    id:'dodge', name:'Dodge', icon:'💨', category:'combat', slots:1, atrophy:'slow',
+    discovery:'Avoid an incoming attack by moving your body out of the way.',
+    summary:'Active avoidance. Not running — moving the minimum necessary to not be where the strike arrives. A dodger makes the attacker miss, and a miss costs the attacker something.',
+    tiers:[
+      {name:'Novice',    desc:'You move out of the way. Sometimes faster than the attack.'},
+      {name:'Apprentice',desc:'Reading telegraphs. You begin to move before the strike commits.'},
+      {name:'Journeyman',desc:'Minimum viable movement. You stop throwing yourself out of range and start removing only what needs to move.'},
+      {name:'Expert',    desc:'Counterattack from the dodge. The miss becomes an opening.'},
+      {name:'Master',    desc:'Stillness punctuated by exactly the movement necessary. Others find it disorienting — they cannot read the intent.'}
+    ]
+  },
+  {
+    id:'block', name:'Block', icon:'🚧', category:'combat', slots:1, atrophy:'slow',
+    discovery:'Interpose a weapon or arm between yourself and an incoming strike.',
+    summary:'Absorbing or deflecting force with weapon, arm, or armoured body part. Blocking costs stamina and weapon condition. It is an exchange. The expert chooses which exchanges are favourable.',
+    tiers:[
+      {name:'Novice',    desc:'You catch the blow. It costs more stamina than it should.'},
+      {name:'Apprentice',desc:'Angling for deflection reduces impact. Your weapon lasts longer.'},
+      {name:'Journeyman',desc:'Parry distinct from block — redirecting rather than stopping.'},
+      {name:'Expert',    desc:'Reading whether to block, parry, or dodge before the strike arrives.'},
+      {name:'Master',    desc:'A block is only taken when it is the best available option. A master rarely needs to.'}
+    ]
+  },
+  // ─── PHYSICAL ────────────────────────────────────────────────────────────
+  {
+    id:'stealth', name:'Stealth', icon:'👤', category:'physical', slots:1, atrophy:'moderate',
+    discovery:'Move without being detected in a situation where detection matters.',
+    summary:'Movement through shadow and silence. Not invisibility — probability management. A skilled practitioner gives the observer nothing worth noticing.',
+    tiers:[
+      {name:'Novice',    desc:'Moving slowly reduces noise. This is the whole of your repertoire.'},
+      {name:'Apprentice',desc:'Understanding sight angles and ambient sound. You pick routes rather than just speeds.'},
+      {name:'Journeyman',desc:'Carrying objects without noise. Shadows as cover. Moving through attention rather than around it.'},
+      {name:'Expert',    desc:'In environments where stealth is possible, your passage leaves no trace others can follow.'},
+      {name:'Master',    desc:'Observed by someone actively looking. They look at you and see furniture.'}
+    ]
+  },
+  {
+    id:'athletics', name:'Athletics', icon:'🏃', category:'physical', slots:1, atrophy:'slow',
+    discovery:'Run, climb, jump — sustained physical effort beyond walking.',
+    summary:'Endurance and capability across all movement types. Climbing walls, sprinting across rooftops, sustained running through rough terrain. The practitioner who invests here can go where most people decide not to.',
+    tiers:[
+      {name:'Novice',    desc:'You can run. Moderately far. Roughly where you intend to go.'},
+      {name:'Apprentice',desc:'Climbing with handholds. Running in armour without stopping.'},
+      {name:'Journeyman',desc:'Freerunning over obstacles. Extended sprints. Using terrain as a tool.'},
+      {name:'Expert',    desc:'Environments that would stop others — sheer walls, rushing water — become options.'},
+      {name:'Master',    desc:'Physical capability the world is not built for. Some walls are tall. That is a problem for other people.'}
+    ]
+  },
+  {
+    id:'survival', name:'Survival', icon:'🌿', category:'physical', slots:1, atrophy:'moderate',
+    discovery:'Spend significant time in wilderness — navigating, finding water, making shelter.',
+    summary:'Reading terrain, finding water and food, making shelter, navigating without landmarks. The deep wilderness between Varek\'s settlements kills the unprepared. A Survival practitioner reads that wilderness as an environment, not a threat.',
+    tiers:[
+      {name:'Novice',    desc:'You can orient yourself roughly. Find water. Not starve, given time.'},
+      {name:'Apprentice',desc:'Track animals. Identify edible and dangerous plants. Predict weather short-term.'},
+      {name:'Journeyman',desc:'Navigate by stars and terrain. Set traps. Read environmental signs of danger.'},
+      {name:'Expert',    desc:'The wilderness is readable — who passed, what lives here, what changed recently.'},
+      {name:'Master',    desc:'Extended months in the deep wilderness with nothing brought in. The land is sufficient.'}
+    ]
+  },
+  {
+    id:'swimming', name:'Swimming', icon:'🌊', category:'physical', slots:1, atrophy:'slow',
+    discovery:'Enter water over your head.',
+    summary:'Staying afloat and moving through water. Without armour, a master uses water as a travel medium and tactical space. Many enemies cannot follow.',
+    tiers:[
+      {name:'Novice',    desc:'You do not drown. Immediately.'},
+      {name:'Apprentice',desc:'Sustained movement in calm water. Basic diving.'},
+      {name:'Journeyman',desc:'River current. Weighted swimming. Underwater movement with breath management.'},
+      {name:'Expert',    desc:'Water is a tactical space. Currents, visibility, depth are variables you manage.'},
+      {name:'Master',    desc:'Moving in water the way a fish does — without fight, with the current as much as against it.'}
+    ]
+  },
+  // ─── CRAFTING ─────────────────────────────────────────────────────────────
+  {
+    id:'smithing', name:'Smithing', icon:'🔨', category:'crafting', slots:1, atrophy:'moderate',
+    discovery:'Work metal — heating, hammering, shaping — toward any purpose.',
+    summary:'Creation and maintenance of metal goods: weapons, armour, tools, hardware. A skilled smith\'s products outlast their maker. The weapon condition system means smithing is never a one-time investment.',
+    tiers:[
+      {name:'Novice',    desc:'Rough shapes. Serviceable tools. Nothing an experienced smith would show a customer.'},
+      {name:'Apprentice',desc:'Consistent quality on simple pieces. Basic repairs without degrading the original.'},
+      {name:'Journeyman',desc:'Weapons and armour that a trained soldier would choose. Understanding of metallurgy.'},
+      {name:'Expert',    desc:'Custom work. Understanding what a user needs before they know how to articulate it.'},
+      {name:'Master',    desc:'The work speaks for itself. Other smiths identify the hand behind it.'}
+    ]
+  },
+  {
+    id:'carpentry', name:'Carpentry', icon:'🪵', category:'crafting', slots:1, atrophy:'moderate',
+    discovery:'Work wood toward a structural or functional purpose.',
+    summary:'Construction, furniture, tool handles, wagon frames, siege implements. Almost everything built in Varek\'s settlements has a carpenter behind it. A master can look at a structure and know how it will fail — and how to prevent it.',
+    tiers:[
+      {name:'Novice',    desc:'Joints that hold. Surfaces that are flat.'},
+      {name:'Apprentice',desc:'Complex joinery. Structural work that does not require constant maintenance.'},
+      {name:'Journeyman',desc:'Efficient use of materials. Reading grain and quality before cutting.'},
+      {name:'Expert',    desc:'Structural assessment — understanding weight, load, failure points in existing construction.'},
+      {name:'Master',    desc:'Construction that outlasts the builder. Other practitioners recognise the joint work.'}
+    ]
+  },
+  {
+    id:'leatherworking', name:'Leatherworking', icon:'🧵', category:'crafting', slots:1, atrophy:'moderate',
+    discovery:'Process and work animal hide into goods.',
+    summary:'Armour, boots, bags, saddles, scabbards. Leather is flexible where metal is not and lighter where metal is heavy. An Expert produces work that combines protection, durability, and comfort in ways a beginning armourer cannot achieve.',
+    tiers:[
+      {name:'Novice',    desc:'Workable goods that serve their function. Not beautiful. Not lasting.'},
+      {name:'Apprentice',desc:'Consistent thickness, proper tanning, basic shaping and stitching.'},
+      {name:'Journeyman',desc:'Armour that does not chafe. Bags with load distribution. Understanding fit.'},
+      {name:'Expert',    desc:'Custom work. Material selection. Pieces that improve with wear.'},
+      {name:'Master',    desc:'The craft becomes invisible — what remains is only the thing that was made.'}
+    ]
+  },
+  {
+    id:'alchemy', name:'Alchemy', icon:'⚗', category:'crafting', slots:1, atrophy:'moderate',
+    discovery:'Prepare a compound — medicinal, poisonous, or reactive — with intent.',
+    summary:'Potions, medicines, poisons, reactive compounds. Alchemy produces effects that magic cannot duplicate exactly — a well-prepared remedy works on those with low Magic Affinity, requires no casting, and leaves no magical signature.',
+    tiers:[
+      {name:'Novice',    desc:'Basic remedies. Wound-cleansing. Simple compounds with a single effect.'},
+      {name:'Apprentice',desc:'Consistent production. Identifying materials in the wild. Basic poisons.'},
+      {name:'Journeyman',desc:'Complex compounds. Long-duration effects. Interaction awareness.'},
+      {name:'Expert',    desc:'Custom formulation. Compounds that interact with magic in predictable ways.'},
+      {name:'Master',    desc:'Effects no single plant or mineral produces. Knowledge that cannot be found in any one book.'}
+    ]
+  },
+  {
+    id:'cooking', name:'Cooking', icon:'🍖', category:'crafting', slots:1, atrophy:'moderate',
+    discovery:'Prepare food for consumption beyond raw eating.',
+    summary:'Sustenance is survival. Prepared food provides more than raw ingredients — the benefits compound with skill level. An expert cook keeps an army on its feet with less. A settlement around a skilled cook has lower illness and higher morale.',
+    tiers:[
+      {name:'Novice',    desc:'Edible. Sometimes appealing.'},
+      {name:'Apprentice',desc:'Consistent production. Seasoning. Preservation techniques.'},
+      {name:'Journeyman',desc:'Cooking from limited ingredients. Maximising nutritional value. Field cooking under poor conditions.'},
+      {name:'Expert',    desc:'Food that produces measurable positive effects — endurance, focus, morale.'},
+      {name:'Master',    desc:'A meal as an event. The people who ate it remember.'}
+    ]
+  },
+  // ─── KNOWLEDGE ─────────────────────────────────────────────────────────────
+  {
+    id:'magic_affinity', name:'Magic Affinity', icon:'✨', category:'knowledge', slots:1, atrophy:'moderate',
+    discovery:'Study, read, or attempt to practise magic in any form.',
+    summary:'The capacity to understand magical principles. Not a casting skill — it determines how quickly grimoires become readable, how fast new schools can be learned, and whether Research-based spell discovery is possible. Low affinity means magic can still be learned. It takes longer and hurts more.',
+    tiers:[
+      {name:'Novice',    desc:'Grimoires are difficult. Schools open slowly. Combinations are distant.'},
+      {name:'Apprentice',desc:'Standard grimoire comprehension speed. New schools take ordinary time.'},
+      {name:'Journeyman',desc:'Schools open faster. Adjacent schools become visible without a teacher.'},
+      {name:'Expert',    desc:'Advanced grimoires yield with effort. Research-based spell discovery becomes practical.'},
+      {name:'Master',    desc:'You read any grimoire as casually as a letter. You derive schools from principles. You recognise working magic by its structure.'}
+    ]
+  },
+  {
+    id:'ancient_languages', name:'Ancient Languages', icon:'📜', category:'knowledge', slots:1, atrophy:'moderate',
+    discovery:'Encounter and attempt to read text in an extinct or archaic language.',
+    summary:"Keth'ari, old Interregnum dialects, pre-Collapse administrative records, draconic notation. The world's most valuable knowledge is often recorded in languages most people cannot read. This skill opens doors locked by language rather than anything else.",
+    tiers:[
+      {name:'Novice',    desc:'Recognition of patterns. A few dozen words in one language.'},
+      {name:'Apprentice',desc:'Slow reading of one language. Context-dependent guesswork.'},
+      {name:'Journeyman',desc:'Fluent reading of one, partial knowledge of two or three more.'},
+      {name:'Expert',    desc:'Multiple extinct languages at fluency. Reconstruction from fragments.'},
+      {name:'Master',    desc:'Dead languages are not barriers. Archaic forms yield as easily as contemporary writing.'}
+    ]
+  },
+  {
+    id:'cryptography', name:'Cryptography', icon:'🔐', category:'knowledge', slots:1, atrophy:'moderate',
+    discovery:'Encounter a coded or deliberately obfuscated text and attempt to understand it.',
+    summary:"Ciphers, codes, hidden messages. Factions that communicate sensitive information do not do so plainly. The Wandering Houses, Compact Factors, Covenant internal correspondence — all encoded. The Thornbound's road network functions as code without being written down.",
+    tiers:[
+      {name:'Novice',    desc:'Simple substitution ciphers. Pattern recognition in short texts.'},
+      {name:'Apprentice',desc:'More complex substitutions. Recognition of encoding systems by structure.'},
+      {name:'Journeyman',desc:'Cracking codes with partial plaintext knowledge. Creating durable ciphers of your own.'},
+      {name:'Expert',    desc:'Breaking ciphers without cribs. Steganography — messages hidden in other messages.'},
+      {name:'Master',    desc:'A text that can be read at all is a text you can read. Given time.'}
+    ]
+  },
+  {
+    id:'occult_knowledge', name:'Occult Knowledge', icon:'🔮', category:'knowledge', slots:1, atrophy:'moderate',
+    discovery:'Study texts, artefacts, or phenomena related to magical history and theory.',
+    summary:"The accumulated scholarship of Varek's magical history — Keth'ari workings, the Accord's collapse, the mechanics of the Awakening, principles underlying the ten schools. A practitioner recognises magical artefacts, understands faction magical traditions, and can identify workings by their structure.",
+    tiers:[
+      {name:'Novice',    desc:'Basic awareness of the ten schools and their effects. Recognition of common magical artefacts.'},
+      {name:'Apprentice',desc:'Faction magical traditions. Historical workings and their effects.'},
+      {name:'Journeyman',desc:"Identifying active enchantments. Understanding Keth'ari methodology from artefacts."},
+      {name:'Expert',    desc:'Reading magical signatures. Deriving what a practitioner used from what remains.'},
+      {name:'Master',    desc:'The theory underlying all ten schools. Connections between schools that most practitioners never perceive.'}
+    ]
+  },
+  {
+    id:'navigation', name:'Navigation', icon:'🧭', category:'knowledge', slots:1, atrophy:'slow',
+    discovery:'Travel through unfamiliar territory and orient yourself.',
+    summary:"Celestial navigation, terrain reading, landmark memorisation. Varek's roads are patrolled and dangerous; its wilderness is worse. The navigator does not need roads — they know where they are, where they are going, and what the landscape between will require.",
+    tiers:[
+      {name:'Novice',    desc:'You can orient by sun and stars. Roughly.'},
+      {name:'Apprentice',desc:'Terrain reading. Identifying travelled routes and game trails.'},
+      {name:'Journeyman',desc:'Dead reckoning with reasonable precision. Reading weather and season in the landscape.'},
+      {name:'Expert',    desc:'Navigating under cloud cover, through unfamiliar terrain, at night. Never lost for more than minutes.'},
+      {name:'Master',    desc:'The map is in your head. Every trip refines it. You navigate the way others walk a familiar room.'}
+    ]
+  },
+  // ─── SOCIAL ─────────────────────────────────────────────────────────────
+  {
+    id:'rhetoric', name:'Rhetoric', icon:'🗣', category:'social', slots:1, atrophy:'moderate',
+    discovery:'Attempt to persuade, argue, or negotiate with someone in a high-stakes situation.',
+    summary:'Argument, persuasion, negotiation. Rhetoric is Mentalism for those who will not use magic — the same ends, achieved through words and understanding what the other person wants. Slower. Leaves no magical residue. Often more durable in its effects.',
+    tiers:[
+      {name:'Novice',    desc:'You make your case. Sometimes it lands.'},
+      {name:'Apprentice',desc:'Reading the audience. Framing arguments to what they care about, not what you care about.'},
+      {name:'Journeyman',desc:'Negotiation. Finding what both sides need. Making agreement seem obvious.'},
+      {name:'Expert',    desc:'Moving people who are not inclined to move. Identifying the actual objection beneath the stated one.'},
+      {name:'Master',    desc:'A conversation that ends with people doing what you needed, certain it was their idea.'}
+    ]
+  },
+  {
+    id:'intimidation', name:'Intimidation', icon:'😤', category:'social', slots:1, atrophy:'moderate',
+    discovery:'Create fear or compliance through presence, words, or demonstration.',
+    summary:"Leveraging fear. Intimidation that requires actual violence is a failure. The expert achieves compliance or retreat without drawing a weapon. The practitioner's reputation eventually does the work before they arrive.",
+    tiers:[
+      {name:'Novice',    desc:'Louder and more aggressive than the other person. Works on those who were already uncertain.'},
+      {name:'Apprentice',desc:'Reading who is bluffing and who is genuinely ready. Calibrating accordingly.'},
+      {name:'Journeyman',desc:'Presence without words. Controlled, quiet threat is more effective than shouting.'},
+      {name:'Expert',    desc:'Specific and credible — naming exactly what will happen if compliance is not offered.'},
+      {name:'Master',    desc:'Your reputation precedes the conversation. Some situations resolve before you speak.'}
+    ]
+  },
+  {
+    id:'deception', name:'Deception', icon:'🎭', category:'social', slots:1, atrophy:'moderate',
+    discovery:'Successfully lie to someone in a situation where the truth matters.',
+    summary:'Lying, disguise, misdirection. Telling a convincing untruth requires understanding the truth well enough to construct a replacement. The most skilled practitioners tell fewer lies that are much harder to check.',
+    tiers:[
+      {name:'Novice',    desc:'Convincing to people who are not paying attention.'},
+      {name:'Apprentice',desc:'Reading tells — in yourself and others. Controlling what you project.'},
+      {name:'Journeyman',desc:'Sustained cover identities. Lies that include verifiable true elements.'},
+      {name:'Expert',    desc:'Deceiving someone who is actively trying to detect deception.'},
+      {name:'Master',    desc:'The lie does not feel like lying. It feels like remembering.'}
+    ]
+  },
+  {
+    id:'trading', name:'Trading', icon:'🪙', category:'social', slots:1, atrophy:'moderate',
+    discovery:'Conduct a significant commercial transaction — buying, selling, or bartering.',
+    summary:'Appraisal, negotiation, market awareness. Understanding what something is worth, what someone needs it for, and what leverage exists in the transaction. In Compact cities, Trading is as useful as Swordsmanship.',
+    tiers:[
+      {name:'Novice',    desc:'You know roughly what things cost. You pay more than you should.'},
+      {name:'Apprentice',desc:'Accurate appraisal. Basic negotiation. You stop leaving obvious value on the table.'},
+      {name:'Journeyman',desc:'Market dynamics — what a thing is worth here versus three towns over, and why.'},
+      {name:'Expert',    desc:'Reading what a seller or buyer actually needs versus what they say they want.'},
+      {name:'Master',    desc:'You make markets rather than participate in them.'}
+    ]
+  },
+  // ─── MAGIC ─────────────────────────────────────────────────────────────
+  {
+    id:'vitalism', name:'Vitalism', icon:'💚', category:'magic', slots:1, atrophy:'fast',
+    discovery:'Encounter a Vitalism grimoire, a Vitalist teacher willing to teach, or be healed by Vitalism and recognise the sensation.',
+    cost:'Concentration. Vitalism is mentally taxing rather than physically draining. Sustained healing requires focus.',
+    summary:'Life and the body. Healing, enhancement, and their inverse. A Vitalist can close wounds, cure illness, accelerate recovery — or drain warmth, suppress function, and accelerate decay. The same understanding that allows one allows the other.',
+    tiers:[
+      {name:'Novice',    desc:'Basic wound closure. Inflammation reduction. Stopping bleeding.'},
+      {name:'Apprentice',desc:'Illness treatment. Accelerated healing over days. Basic pain suppression.'},
+      {name:'Journeyman',desc:'Regeneration — knitting bones, recovering damaged tissue. Remote application.'},
+      {name:'Expert',    desc:"Mastery of the body's processes. Enhancement: endurance, speed, temporary strength."},
+      {name:'Master',    desc:'Healing without contact. Reversing injuries others consider permanent.'}
+    ],
+    combinations:['Vitalism + Necromancy — the exact boundary between life and death, in both directions. Rare, powerful.','Vitalism + Naturalism — deep healing using living materials; understanding ecosystem self-repair.','Vitalism + Temporal — briefly un-wound the dying. Theoretical for most practitioners.'],
+    factions:{"Ashen Covenant":"Burned — all magic is sin","Ironveil Compact":"Pay well for healers","Keth'ari Remnant":'"Crude, but functional"',"Thornbound":"Deeply respected","Steel Throne":"Valued — keeps soldiers alive","Bleached Court":"Interesting curiosity","Greenskin Clans":"Honoured (battle-healers)","Wandering Houses":"Employ quietly","The Athenaeum":"Full academic study; research programs active"}
+  },
+  {
+    id:'entropy', name:'Entropy', icon:'🌑', category:'magic', slots:1, atrophy:'fast',
+    discovery:'Encounter an Entropy grimoire or practitioner. Observe significant magical decay.',
+    cost:'The caster experiences accelerated ageing — minor and recoverable at low skill, cumulative with extended practice.',
+    summary:'Decay and dissolution. Entropy accelerates the natural breakdown of everything — living tissue, metal, stone, rope. A practitioner who understands Entropy understands how all things fail, and can make that failure happen now.',
+    tiers:[
+      {name:'Novice',    desc:'Accelerating rust. Decaying organic matter. Crude, broad, difficult to target.'},
+      {name:'Apprentice',desc:'Targeted application. Decaying specific components without damaging surroundings.'},
+      {name:'Journeyman',desc:'Precise failure induction — rotting the lock without touching the door.'},
+      {name:'Expert',    desc:'Ageing at will. Stopping personal decay entirely as a sustained effect.'},
+      {name:'Master',    desc:'Understanding the exact structure of what decays and intervening at that level.'}
+    ],
+    combinations:['Entropy + Necromancy — death itself at a structural level.','Entropy + Warding — persistent curses; decay placed and left to work.','Entropy + Temporal — see exactly how something decayed and reverse it precisely.'],
+    factions:{"Ashen Covenant":"Heresy — accelerating death is blasphemy","Ironveil Compact":"Limited commercial interest","Keth'ari Remnant":"Ancient tradition; refined practice","Thornbound":"Uneasy — used by some for practical purposes","Steel Throne":"Banned in military use; feared","Bleached Court":"Carefully studied — relates to their own condition","Greenskin Clans":"Taboo — natural decay should not be forced","Wandering Houses":"Useful in specific operations","The Athenaeum":"Extensive research; primary focus of several scholars"}
+  },
+  {
+    id:'conjuration', name:'Conjuration', icon:'🌀', category:'magic', slots:1, atrophy:'fast',
+    discovery:'Encounter a Conjuration grimoire or a practitioner demonstrating construction or summoning.',
+    cost:'Sustained concentration for maintained conjurations. Larger conjurations require proportional focus.',
+    summary:'Summoning and magical creation. A Conjuration practitioner can create structures and objects from magical energy and summon basic constructs that persist and act on instruction. This school is the foundation of magical building. Practitioners who specialise in The Between use a separate, heavier skill — Summoning.',
+    tiers:[
+      {name:'Novice',    desc:'Simple constructs — barriers, basic shapes. Summons that barely hold together.'},
+      {name:'Apprentice',desc:'Persistent simple structures. Summons that obey basic instruction.'},
+      {name:'Journeyman',desc:'Complex construction. Independent summons that act on standing orders.'},
+      {name:'Expert',    desc:'Large structures in reasonable time. Summons with tactical capability.'},
+      {name:'Master',    desc:'Construction that persists without concentration. Summons that operate independently for extended periods.'}
+    ],
+    combinations:['Conjuration + Naturalism — living structures; grown wood and shaped stone.','Conjuration + Entropy — buildings pulled from ruin; architecturally unsettling, extremely fast.','Conjuration + Warding — every wall is a ward.','Conjuration + Elementalism — structures of shaped earth, fired stone, frozen water.','Conjuration + Spatial — summon from anywhere; send to anywhere.'],
+    factions:{"Ashen Covenant":"Heresy","Ironveil Compact":"Valued for infrastructure","Keth'ari Remnant":"Familiar school; their methods are more refined","Thornbound":"Useful for camp construction","Steel Throne":"Prized for fortification","Bleached Court":"Uses it for architecture and aesthetic","Greenskin Clans":"Treated with caution","Wandering Houses":"Commercial interest","The Athenaeum":"Active research; the overlap with Summoning is a subject of debate"}
+  },
+  {
+    id:'elementalism', name:'Elementalism', icon:'🔥', category:'magic', slots:1, atrophy:'fast',
+    discovery:'Encounter an Elementalism grimoire or practitioner. The most widely available school.',
+    cost:'Physical stamina. Elementalism is loud and exhausting — sustained elemental casting drains the body like sprinting.',
+    summary:'Fire, water, earth, air. The first school most practitioners find and the last they fully master. Blunt, honest, devastating. Elementalism announces itself. Every cast is visible. Subtlety requires significant investment and remains difficult.',
+    tiers:[
+      {name:'Novice',    desc:'Throwing fire and hoping. Gusts. Basic earth movement. Exhausted after a few casts.'},
+      {name:'Apprentice',desc:'Directional control. Sustained effects for short durations. Still loud.'},
+      {name:'Journeyman',desc:'Scale begins. Multiple elements in sequence. Managing stamina in extended fights.'},
+      {name:'Expert',    desc:'Precision within power. Choosing the exact elemental expression the situation requires.'},
+      {name:'Master',    desc:'Holding a storm in a closed fist. Scale and precision simultaneously.'}
+    ],
+    combinations:['Elementalism + Warding — environmental wards; triggers that release elemental effects.','Elementalism + Naturalism — weather working; terrain shaping over large areas.','Elementalism + Conjuration — structures of shaped earth, fired stone, frozen water.'],
+    factions:{"Ashen Covenant":"Heresy — though fire has complicated theological significance","Ironveil Compact":"Valued in controlled contexts","Keth'ari Remnant":'"The human school — obvious, loud, graceless"',"Thornbound":"Useful for defence","Steel Throne":"Prized for warfare","Bleached Court":"Seen as beneath them","Greenskin Clans":"Respected — warriors recognise power","Wandering Houses":"Sell access to practitioners","The Athenaeum":"Core research school; most accessible for study"}
+  },
+  {
+    id:'mentalism', name:'Mentalism', icon:'🧠', category:'magic', slots:1, atrophy:'fast',
+    discovery:'Encounter a Mentalism grimoire or practitioner. Rarely advertised but present in most major cities.',
+    cost:"The caster's own mind. Sustained or deep Mentalism blurs the distinction between what the caster remembers, feels, and believes. Long-term practitioners are often interesting company.",
+    summary:"Influence and manipulation of minds. Persuasion beyond natural charm, induced fear, illusion, reading surface thoughts, implanting memories, full domination of will at the extreme end. The Ashen Covenant calls it soul-theft. The Wandering Houses have employed it quietly for centuries.",
+    tiers:[
+      {name:'Novice',    desc:'Projecting obvious wrongness that most people feel without naming.'},
+      {name:'Apprentice',desc:'Surface emotional influence — nudging mood, amplifying existing feelings.'},
+      {name:'Journeyman',desc:'Direct fear induction. Reading surface thoughts. Suggestion without force.'},
+      {name:'Expert',    desc:'Memory work. Planted suggestions that activate later. Subtle enough targets do not feel the intrusion.'},
+      {name:'Master',    desc:'Manipulation so subtle targets arrive at the intended conclusion certain it was their own thought.'}
+    ],
+    combinations:['Mentalism + Naturalism — communicate with animals; feel the emotional state of an area.','Mentalism + Necromancy — reach the echo of a mind that has died.','Mentalism + Warding — suggestion-fields on doorways; rooms that induce specific emotional states.'],
+    factions:{"Ashen Covenant":'"Soul-theft" — burned on sight',"Ironveil Compact":"Employ quietly; never speak of it","Keth'ari Remnant":"Practised and refined for centuries","Thornbound":"Deeply distrusted — feels like violation","Steel Throne":"Officially banned; officers secretly screened for it","Bleached Court":"Standard tool of Court operation","Greenskin Clans":"Gravest dishonour to touch a warrior's mind","Wandering Houses":"Most valuable school they deal in","The Athenaeum":"Refined here more than anywhere outside the Keth'ari"}
+  },
+  {
+    id:'necromancy', name:'Necromancy', icon:'💀', category:'magic', slots:2, atrophy:'fast',
+    discovery:"Stand near the recently dead with receptive awareness. The world's mana saturation has thinned death's boundary for those who pay attention. A tingle at the edge of perception near fresh remains.",
+    cost:"Proximity — sustained practice pulls the caster toward death's edge in a felt, physical sense. Extended practitioners carry something about them. Animals react. Children stare.",
+    summary:'Death and the raising of the dead. A two-slot commitment — the most expensive single-school investment in Varek. Bind Capacity grows with skill depth rather than slot count. Named undead emergence becomes possible at Master tier. See the full necromancy system document for depth.',
+    tiers:[
+      {name:'Novice',    desc:'Raise simple undead from fresh corpses. Shambling. Limited. One or two active bindings.'},
+      {name:'Apprentice',desc:'Older remains. Undead retain more life-skills. Basic communication with the recently dead.'},
+      {name:'Journeyman',desc:'Raise with precision. Undead function at Passive tasking. Four to eight bindings. The Steward path becomes viable.'},
+      {name:'Expert',    desc:'Fragmentary remains. Complex life-skills preserved. Eight to fifteen bindings. The Warlord path reaches serious scale.'},
+      {name:'Master',    desc:'Full life-skill inheritance. Near-living capability. Dozens of bindings. Named undead emergence possible.'}
+    ],
+    combinations:['Necromancy + Vitalism — the exact boundary between life and death, in both directions.','Necromancy + Entropy — death at a structural level.','Necromancy + Mentalism — reaching the echo of a mind that has died.','Dominion (shared support) — essential for Warlord scale or Steward settlement management.'],
+    factions:{"Ashen Covenant":"Burned without trial","Ironveil Compact":"Neutral — dead tell good secrets; undead craftsmen are efficient","Keth'ari Remnant":"Death is final. This is wrong.","Thornbound":"Varies by individual — no faction rule","Steel Throne":"Officially illegal; used in secret by intelligence services","Bleached Court":"Core tradition — their entire culture","Greenskin Clans":"Dead should rest. Strong cultural taboo.","Wandering Houses":"Trade information about it carefully","The Athenaeum":"Academic discipline; not a moral question"}
+  },
+  {
+    id:'warding', name:'Warding', icon:'🔆', category:'magic', slots:1, atrophy:'fast',
+    discovery:'Encounter a Warding grimoire or a warded location. Warding practitioners are more common in cities.',
+    cost:'Time. Warding is the slowest school. Complex wards require hours of careful inscription.',
+    summary:'Persistent magical effects. Wards on doors, enchantments on objects, detection fields, alarm systems, curses that last years, blessings that outlive their caster. The slowest school. The most permanent.',
+    tiers:[
+      {name:'Novice',    desc:'Basic alarm wards. Simple door-wards that trigger on contact.'},
+      {name:'Apprentice',desc:'Object enchantment — simple persistent effects on weapons or tools.'},
+      {name:'Journeyman',desc:'Layered wards. Conditional triggers. Detection fields with specific criteria.'},
+      {name:'Expert',    desc:'Complex weapon and armour enchantments. Wards that persist without active maintenance.'},
+      {name:'Master',    desc:'Inscriptions undetectable until triggered. Multi-layered effects on a single object.'}
+    ],
+    combinations:['Warding + any school — persistent versions of that school\'s effects.','Warding + Entropy — lasting curses; decay placed and left to work.','Warding + Vitalism — healing enchantments on objects.','Warding + Mentalism — suggestion-fields on thresholds.','Warding + Spatial — warded portals; rooms larger inside than out.'],
+    factions:{"Ashen Covenant":"Heresy","Ironveil Compact":"High commercial value — warehouse warding, vault protection","Keth'ari Remnant":"Ancient and refined; the Accord was built on it","Thornbound":"Practical camp defence","Steel Throne":"Prized for fortification and intelligence","Bleached Court":"Extensively used for architecture and security","Greenskin Clans":"Respected — useful for territory marking","Wandering Houses":"Commercial interest; protection of goods","The Athenaeum":"Core research; the longest-studied school in formal scholarship"}
+  },
+  {
+    id:'naturalism', name:'Naturalism', icon:'🌿', category:'magic', slots:1, atrophy:'fast',
+    discovery:'Spend extended time in living wilderness with receptive awareness. Contact with Naturalist practitioners or their texts.',
+    cost:'Attunement — Naturalism weakens significantly in dense urban environments, corrupted land, or anywhere the natural world is absent.',
+    summary:'The living world. Communication with animals and plants, weather working, terrain shaping, reading the emotional state of ecosystems. Weakens in cities. Profound in the wilderness.',
+    tiers:[
+      {name:'Novice',    desc:'Basic communication with nearby animals — intent and simple commands.'},
+      {name:'Apprentice',desc:'Weather reading. Plant growth guidance. Reading the health of a landscape.'},
+      {name:'Journeyman',desc:'Animal instruction beyond proximity. Local weather influence.'},
+      {name:'Expert',    desc:'Communicating with creatures of significant intelligence. Terrain shaping over smaller areas.'},
+      {name:'Master',    desc:'Weather across a region. Reading corruption in the land from miles away. Feeling the Awakening in living creatures.'}
+    ],
+    combinations:['Naturalism + Vitalism — profound healing using living materials; ecosystem self-repair.','Naturalism + Conjuration — structures grown from living matter.','Naturalism + Elementalism — weather working; terrain shaping over large areas.','Naturalism + Mentalism — communicate with animals; feel the emotional state of an area.'],
+    factions:{"Ashen Covenant":"Heresy, but rarely prioritised over other schools","Ironveil Compact":"Valued for agriculture and weather","Keth'ari Remnant":'"This, humans learned from us"',"Thornbound":"Most respected school among them","Steel Throne":"Useful for campaigns — weather and terrain","Bleached Court":"Mild contempt — they are beyond nature","Greenskin Clans":"Sacred — shamanic tradition, core identity","Wandering Houses":"Respected; traded with","The Athenaeum":"Extensive research; the Awakening connection makes this a priority school"}
+  },
+  {
+    id:'spatial', name:'Spatial', icon:'🌐', category:'magic', slots:1, atrophy:'fast',
+    discovery:'Encounter a Spatial grimoire or practitioner. Less common than Elementalism; more common than Temporal.',
+    cost:'Disorientation — spatial casting is nauseating for beginners and merely unsettling for masters. Imprecision is dangerous.',
+    summary:'Space and distance. Teleportation, portal creation, spatial folding. A skilled Spatial practitioner can be somewhere else before the question of whether they should be has been resolved.',
+    tiers:[
+      {name:'Novice',    desc:'Short-range displacement. Nausea. Sometimes you arrive where you intended.'},
+      {name:'Apprentice',desc:'Reliable short-range. Beginning to carry objects through displacement.'},
+      {name:'Journeyman',desc:'Significant range. Portals with short duration. Spatial sense in environments.'},
+      {name:'Expert',    desc:'Long-range precision. Sending others through portals without the caster moving.'},
+      {name:'Master',    desc:'Range is no longer a meaningful constraint. The disorientation has become familiar. Barely.'}
+    ],
+    combinations:['Spatial + Warding — warded portals; rooms larger inside than out.','Spatial + Conjuration — summon from anywhere; send to anywhere.','Spatial + Temporal — theoretically: movement through time as well as space.'],
+    factions:{"Ashen Covenant":"Heresy","Ironveil Compact":"Highest value school — movement is commerce","Keth'ari Remnant":"Ancient and refined practice","Thornbound":"Useful for escape and supply","Steel Throne":"Valued for military logistics","Bleached Court":"Used by Court messengers and agents","Greenskin Clans":"Practical acceptance","Wandering Houses":"Second most valued school","The Athenaeum":"Active research; intersection with Temporal is a priority area"}
+  },
+  {
+    id:'temporal', name:'Temporal', icon:'⏳', category:'magic', slots:1, atrophy:'fast',
+    discovery:'Found, not chosen. A mentor, an ancient text, or a strange experience in the world. Some players may never encounter it.',
+    cost:'Severe. Time resists interference violently. Every cast compounds — extended practitioners age erratically, experience memory discontinuities, occasionally perceive things that have not happened yet.',
+    summary:'Time. Slowing, accelerating, seeing into the recent past, glimpsing near futures. Reversal is theoretically possible. Those who have achieved it use it rarely. The school is rare and has a cost that compounds in ways that do not resolve.',
+    tiers:[
+      {name:'Novice',    desc:'Minor temporal distortion — brief slow fields in a small area. Unsettling to experience and to cause.'},
+      {name:'Apprentice',desc:'Reliable short-duration fields. Brief sight into the immediate past of a location.'},
+      {name:'Journeyman',desc:'Extended fields. Wider sight into the past. Near-future glimpses that are accurate but not clear.'},
+      {name:'Expert',    desc:'Broad temporal manipulation. Reliable past-sight over significant duration.'},
+      {name:'Master',    desc:'Reversal. Used rarely. Those who have done it describe the experience in ways that do not translate.'}
+    ],
+    combinations:['Temporal + Vitalism — briefly un-wound the dying. Theoretical for most.','Temporal + Entropy — see exactly how something decayed and reverse it precisely.','Temporal + Spatial — theoretically: movement through time as well as space.','Temporal + any school — extraordinary results. Practical for almost nobody.'],
+    factions:{"Ashen Covenant":"Does not believe it exists — calls it legend and delusion","Ironveil Compact":"Would pay anything for it","Keth'ari Remnant":"Rumoured to have one active practitioner. They do not discuss this.","Thornbound":"Unknown to most members","Steel Throne":"Classified. Officially denied.","Bleached Court":"Privately obsessed with it","Greenskin Clans":"Myth and legend only","Wandering Houses":"Possess fragments of knowledge. Guard them absolutely.","The Athenaeum":"Active research programmes. They do not share results."}
+  },
+  {
+    id:'summoning', name:'Summoning', icon:'🌌', category:'magic', slots:2, atrophy:'fast',
+    discovery:"Found near Yreth's Threshold or at a high-mana convergence zone. Cannot be learned from a standard grimoire. Requires a practitioner who has already found it, or direct exposure to The Between.",
+    cost:'Each extracted entity requires a dedicated Mindspace anchor slot beyond the two skill slots. Binding one means sacrificing another skill capacity for the duration.',
+    summary:"Extraction from The Between — the crack in reality accessible near Yreth's Threshold and at high-mana convergence zones. Summoned entities were never alive and never dead. They are powerful, unstable, and wrong about being here. A separate two-slot school from Necromancy.",
+    tiers:[
+      {name:'Novice',    desc:'Awareness of The Between near convergence zones. Cannot extract, only perceive. The perception is uncomfortable.'},
+      {name:'Apprentice',desc:"Basic extraction near Yreth's Threshold or strong convergence zones. Entities are weak, unstable, and expensive."},
+      {name:'Journeyman',desc:'Stable extraction at convergence zones. Entities develop consistent capabilities. Two entities manageable.'},
+      {name:'Expert',    desc:'Access to stronger entities. Extraction at weaker convergence zones. Three entities at full capability.'},
+      {name:'Master',    desc:'Extraction from any location where the boundary has thinned. Each anchor slot yields something that changes any engagement it enters.'}
+    ],
+    combinations:['Summoning + Necromancy — the hybrid build: both armies and Between entities. Five total slots. The world has no protocol for this.','Dominion (shared) — mass command applies to summoned entities as well as raised undead.'],
+    factions:{"Ashen Covenant":"Crusade-level response. Tears holes in creation itself, by their theology.","Ironveil Compact":"Extreme caution — the commercial risks of collapsing anchors are unacceptable","Keth'ari Remnant":"Aware it exists. Will not discuss what they know.","Thornbound":"Deep unease. The entities are not people in any sense the Thornbound can apply.","Steel Throne":"Classified threat. Active containment protocols exist.","Bleached Court":"Fascinated and unsettled. This is not necromancy and they know it.","Greenskin Clans":"Terror. The entities feel wrong in ways that animal instinct registers before thought does.","Wandering Houses":"No one will openly admit to knowing about it.","The Athenaeum":"Their most active and most secretive research area."}
+  },
+  // ─── SPECIAL ─────────────────────────────────────────────────────────────
+  {
+    id:'dominion', name:'Dominion', icon:'👑', category:'special', slots:1, atrophy:'fast',
+    discovery:'Develops alongside Necromancy or Summoning. Emerges from the need to manage more entities than individual attention can serve.',
+    cost:'A Mindspace slot and ongoing attentiveness. Dominion held without active entities is passive maintenance.',
+    summary:'Mass command. The shared support skill for both Necromancers and Summoners. Does not raise the dead or extract from The Between — it solves the problem that emerges when what has been raised or summoned exceeds individual management capacity.',
+    tiers:[
+      {name:'Novice',    desc:'Group orders to small clusters (3–5). Basic formation movement.'},
+      {name:'Apprentice',desc:'Coordinated formations up to a dozen. Standing orders that persist without direct oversight.'},
+      {name:'Journeyman',desc:'Squad-level tactical command. Delegate oversight to senior entities. Settlement workforce management becomes practical.'},
+      {name:'Expert',    desc:'Army-scale coordination. Complex multi-group tactics. A settlement runs itself under general direction.'},
+      {name:'Master',    desc:"The practitioner's will operates as an ambient field. Every entity within range knows its role and executes without explicit instruction."}
+    ],
+    combinations:['Dominion + Necromancy — essential for Warlord scale or Steward settlement management.','Dominion + Summoning — coordinates multiple Between-touched entities simultaneously.','Dominion + both — the full hybrid build. Required to manage both forces without collapse.']
+  }
+];
+
+// ─── State ───────────────────────────────────────────────────────────────────
+var activeCat = 'all';
+var searchQuery = '';
+
+// ─── Build sidebar ───────────────────────────────────────────────────────────
+function countCat(catId) {
+  if (catId === 'all') return SKILLS.length;
+  return SKILLS.filter(function(s){ return s.category === catId; }).length;
+}
+
+function buildSidebar() {
+  var nav = document.getElementById('sidebar');
+  nav.innerHTML = '';
+  CATEGORIES.forEach(function(cat) {
+    var btn = document.createElement('button');
+    btn.className = cat.id === activeCat ? 'active' : '';
+    btn.innerHTML = cat.label + '<span class="cat-count">' + countCat(cat.id) + '</span>';
+    btn.addEventListener('click', function() {
+      activeCat = cat.id;
+      searchQuery = '';
+      document.getElementById('search').value = '';
+      buildSidebar();
+      buildGrid();
+    });
+    nav.appendChild(btn);
+  });
+}
+
+// ─── Slot pips ───────────────────────────────────────────────────────────────
+function slotPips(slots, maxSlots) {
+  maxSlots = maxSlots || 3;
+  var html = '';
+  for (var i = 0; i < maxSlots; i++) {
+    html += '<span class="slot-pip' + (i < slots ? ' filled' : '') + '"></span>';
+  }
+  return html;
+}
+
+// ─── Build grid ──────────────────────────────────────────────────────────────
+function buildGrid() {
+  var container = document.getElementById('content');
+  var q = searchQuery.toLowerCase();
+
+  var filtered = SKILLS.filter(function(s) {
+    var catMatch = activeCat === 'all' || s.category === activeCat;
+    var searchMatch = !q || s.name.toLowerCase().indexOf(q) >= 0 || s.summary.toLowerCase().indexOf(q) >= 0;
+    return catMatch && searchMatch;
+  });
+
+  document.getElementById('total-count').textContent = SKILLS.length;
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="no-results">No skills match your search.</div>';
+    return;
+  }
+
+  if (q || activeCat === 'all') {
+    // flat grid, no section headers
+    var html = '<div class="grid">';
+    filtered.forEach(function(s) { html += renderCard(s); });
+    html += '</div>';
+    container.innerHTML = html;
+  } else {
+    var label = CATEGORIES.find(function(c){ return c.id === activeCat; }).label;
+    var html = '<div class="section-title">' + label + ' — ' + filtered.length + ' skills</div>';
+    html += '<div class="grid">';
+    filtered.forEach(function(s) { html += renderCard(s); });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // attach click handlers
+  container.querySelectorAll('.card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      openModal(card.dataset.id);
+    });
+  });
+}
+
+function renderCard(s) {
+  var badgeCls = 'cat-badge badge-' + s.category;
+  var catLabel = s.category.charAt(0).toUpperCase() + s.category.slice(1);
+  var slotLabel = s.slots === 1 ? '1 Mindspace slot' : s.slots + ' Mindspace slots';
+  return '<div class="card" data-id="' + s.id + '">' +
+    '<span class="' + badgeCls + '">' + catLabel + '</span>' +
+    '<div class="card-top"><div class="card-icon">' + s.icon + '</div>' +
+    '<div><div class="card-name">' + s.name + '</div>' +
+    '<div class="card-slots">' + slotPips(s.slots) + ' ' + slotLabel + '</div></div></div>' +
+    '<div class="card-summary">' + s.summary + '</div>' +
+    '</div>';
+}
+
+// ─── Modal ───────────────────────────────────────────────────────────────────
+function openModal(id) {
+  var s = SKILLS.find(function(x){ return x.id === id; });
+  if (!s) return;
+
+  document.getElementById('m-icon').textContent = s.icon;
+  document.getElementById('m-name').textContent = s.name;
+
+  var catEl = document.getElementById('m-cat');
+  catEl.textContent = s.category.charAt(0).toUpperCase() + s.category.slice(1);
+  catEl.className = 'modal-cat badge-' + s.category;
+
+  var slotStr = s.slots === 1 ? '1 Mindspace slot' : s.slots + ' Mindspace slots';
+  document.getElementById('m-slots').innerHTML = slotPips(s.slots, 3) + ' ' + slotStr;
+
+  var atEl = document.getElementById('m-atrophy');
+  atEl.textContent = ATROPHY_LABEL[s.atrophy] || s.atrophy;
+  atEl.className = 'modal-atrophy atrophy-' + s.atrophy;
+
+  document.getElementById('m-summary').textContent = s.summary;
+  document.getElementById('m-discovery').textContent = s.discovery || '—';
+
+  var costWrap = document.getElementById('m-cost-wrap');
+  if (s.cost) {
+    document.getElementById('m-cost').textContent = s.cost;
+    costWrap.style.display = '';
+  } else {
+    costWrap.style.display = 'none';
+  }
+
+  var tiersHtml = '';
+  s.tiers.forEach(function(t) {
+    tiersHtml += '<tr><td class="tier-name">' + t.name + '</td><td class="tier-desc">' + t.desc + '</td></tr>';
+  });
+  document.getElementById('m-tiers').innerHTML = tiersHtml;
+
+  var combosWrap = document.getElementById('m-combos-wrap');
+  if (s.combinations && s.combinations.length) {
+    var cHtml = s.combinations.map(function(c){ return '<li>' + c + '</li>'; }).join('');
+    document.getElementById('m-combos').innerHTML = cHtml;
+    combosWrap.style.display = '';
+  } else {
+    combosWrap.style.display = 'none';
+  }
+
+  var factionsWrap = document.getElementById('m-factions-wrap');
+  if (s.factions) {
+    var fHtml = '';
+    Object.keys(s.factions).forEach(function(k) {
+      fHtml += '<tr><td class="faction-name">' + k + '</td><td class="faction-react">' + s.factions[k] + '</td></tr>';
+    });
+    document.getElementById('m-factions').innerHTML = fHtml;
+    factionsWrap.style.display = '';
+  } else {
+    factionsWrap.style.display = 'none';
+  }
+
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.getElementById('modal-box').scrollTop = 0;
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-backdrop').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+document.getElementById('search').addEventListener('input', function() {
+  searchQuery = this.value;
+  if (searchQuery) activeCat = 'all';
+  buildSidebar();
+  buildGrid();
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildSidebar();
+buildGrid();
+</script>
+</body>
+</html>

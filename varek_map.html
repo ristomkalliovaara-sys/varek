@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Varek — World Map</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1a1510;
+    color: #c8b89a;
+    font-family: 'Georgia', serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 12px;
+  }
+
+  #header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 1200px;
+    margin-bottom: 8px;
+  }
+
+  #title {
+    font-size: 22px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #d4b896;
+    text-shadow: 0 0 12px rgba(180,130,60,0.4);
+  }
+
+  #controls-seed {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #controls-seed label {
+    font-size: 13px;
+    color: #a09070;
+  }
+
+  #seedInput {
+    background: #2a2018;
+    border: 1px solid #5a4830;
+    color: #c8b89a;
+    padding: 4px 8px;
+    font-family: 'Georgia', serif;
+    font-size: 13px;
+    width: 100px;
+    border-radius: 2px;
+  }
+
+  button {
+    background: #3a2c1a;
+    border: 1px solid #6a5030;
+    color: #c8b89a;
+    padding: 4px 12px;
+    font-family: 'Georgia', serif;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.15s;
+  }
+
+  button:hover { background: #4a3c22; }
+
+  #toggles {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 1200px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #a09070;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-label input[type="checkbox"] {
+    accent-color: #8a6c3a;
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+  }
+
+  .toggle-label:hover { color: #c8b89a; }
+
+  #mapContainer {
+    position: relative;
+    width: 1200px;
+    height: 900px;
+    border: 2px solid #4a3820;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 60px rgba(0,0,0,0.3);
+  }
+
+  #mapCanvas {
+    display: block;
+    width: 1200px;
+    height: 900px;
+    cursor: crosshair;
+  }
+
+  #tooltip {
+    position: fixed;
+    background: rgba(20,15,8,0.95);
+    border: 1px solid #6a5030;
+    color: #c8b89a;
+    padding: 8px 12px;
+    font-size: 13px;
+    pointer-events: none;
+    display: none;
+    z-index: 100;
+    max-width: 220px;
+    line-height: 1.5;
+    border-radius: 2px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.7);
+  }
+
+  #tooltip .tt-name { font-size: 14px; color: #d4b896; font-weight: bold; margin-bottom: 3px; }
+  #tooltip .tt-faction { font-size: 11px; color: #9a8060; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+  #tooltip .tt-desc { font-size: 12px; color: #b0a080; }
+
+  #legend {
+    display: flex;
+    gap: 20px;
+    width: 1200px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    padding: 8px 0;
+    border-top: 1px solid #3a2c1a;
+  }
+
+  .legend-section { display: flex; flex-direction: column; gap: 3px; }
+  .legend-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #7a6040; margin-bottom: 2px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9a8868; }
+  .legend-swatch { width: 14px; height: 10px; border-radius: 1px; flex-shrink: 0; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-star { font-size: 12px; line-height: 1; }
+
+  .lang-switch { display: flex; gap: 4px; flex-shrink: 0; }
+  .lang-btn {
+    background: none;
+    border: 1px solid #5a4830;
+    color: #7a6040;
+    font-family: 'Georgia', serif;
+    font-size: 12px;
+    padding: 3px 10px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: border-color .2s, color .2s;
+  }
+  .lang-btn.active { border-color: #c9a84c; color: #c9a84c; }
+  .lang-btn:hover:not(.active) { border-color: #8a6c3a; color: #a09070; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="title">Varek &mdash; <span id="map-title-word">World Map</span></div>
+  <div id="controls-seed">
+    <label for="seedInput" id="seed-label">Seed:</label>
+    <button id="prevBtn" title="Previous seed">&#8592;</button>
+    <input type="text" id="seedInput" value="LordVarek" />
+    <button id="nextBtn" title="Next seed">&#8594;</button>
+    <button id="randomBtn">Random</button>
+    <button id="regenBtn">Regenerate</button>
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="fi">FI</button>
+    </div>
+  </div>
+</div>
+
+<div id="toggles">
+  <span id="show-label" style="font-size:12px;color:#6a5840;text-transform:uppercase;letter-spacing:1px;">Show:</span>
+  <label class="toggle-label"><input type="checkbox" id="togBiomes" checked> <span id="tog-biomes">Biomes</span></label>
+  <label class="toggle-label"><input type="checkbox" id="togFactions" checked> <span id="tog-factions">Faction Territories</span></label>
+  <label class="toggle-label"><input type="checkbox" id="togRoads" checked> <span id="tog-roads">Roads</span></label>
+  <label class="toggle-label"><input type="checkbox" id="togLocations" checked> <span id="tog-locations">Named Locations</span></label>
+  <label class="toggle-label"><input type="checkbox" id="togDragons" checked> <span id="tog-dragons">Dragon Lairs</span></label>
+</div>
+
+<div id="mapContainer">
+  <canvas id="mapCanvas" width="1200" height="900"></canvas>
+</div>
+
+<div id="tooltip">
+  <div class="tt-name" id="ttName"></div>
+  <div class="tt-faction" id="ttFaction"></div>
+  <div class="tt-desc" id="ttDesc"></div>
+</div>
+
+<div id="legend">
+  <div class="legend-section">
+    <div class="legend-title" id="leg-biomes-title">Biomes</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#2a3d5a"></div><span id="leg-deep-ocean">Deep Ocean</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#3a5470"></div><span id="leg-shallow-sea">Shallow Sea</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#c8b87a"></div><span id="leg-coast">Coast / Beach</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#9aaa6a"></div><span id="leg-plains">Plains / Farmland</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#3a5c3a"></div><span id="leg-forest">Dense Forest</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#5a7260"></div><span id="leg-highlands">Highlands</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#7a7a7a"></div><span id="leg-mountains">Mountains</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#5a6a40"></div><span id="leg-marsh">Marsh / Wetland</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#a0a8b0"></div><span id="leg-tundra">Tundra</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#4a3020"></div><span id="leg-scorched">Scorched / Volcanic</span></div>
+  </div>
+  <div class="legend-section">
+    <div class="legend-title" id="leg-factions-title">Factions</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(180,120,40,0.4)"></div>The Steel Throne</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(60,140,160,0.4)"></div>Ironveil Compact</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(200,160,60,0.4)"></div>Ashen Covenant</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(80,120,200,0.4)"></div>The Vigil</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(100,40,120,0.4)"></div>Bleached Court</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(60,160,140,0.4)"></div>The Athenaeum</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(140,100,180,0.4)"></div>Keth'ari Remnant</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(80,120,40,0.4)"></div>Greenskin Clans</div>
+  </div>
+  <div class="legend-section">
+    <div class="legend-title" id="leg-roads-title">Roads</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(210,180,110,0.85)"></div><span id="leg-major">Major highway</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(170,148,88,0.75)"></div><span id="leg-patrol">Patrol road</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:rgba(130,108,68,0.65)"></div><span id="leg-track">Track / pass</span></div>
+  </div>
+  <div class="legend-section">
+    <div class="legend-title" id="leg-locations-title">Locations</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d4a030"></div>Steel Throne</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#40a0b8"></div>Ironveil Compact</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c8c040"></div>Ashen Covenant</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4060d0"></div>The Vigil</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8030a0"></div>Bleached Court</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#30b090"></div>The Athenaeum</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a070c0"></div>Keth'ari Remnant</div>
+    <div class="legend-item"><span class="legend-star" style="color:#e08020">&#9733;</span><span id="leg-dragon-lair">Dragon Lair</span></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  LANGUAGE
+// ============================================================
+var LANG = 'en';
+
+var MAP_UI = {
+  en: {
+    title_word:'World Map', seed_label:'Seed:', random:'Random', regenerate:'Regenerate',
+    show:'Show:', tog_biomes:'Biomes', tog_factions:'Faction Territories', tog_roads:'Roads',
+    tog_locations:'Named Locations', tog_dragons:'Dragon Lairs',
+    leg_biomes:'Biomes', leg_factions:'Factions', leg_roads:'Roads', leg_locations:'Locations',
+    deep_ocean:'Deep Ocean', shallow_sea:'Shallow Sea', coast:'Coast / Beach',
+    plains:'Plains / Farmland', forest:'Dense Forest', highlands:'Highlands',
+    mountains:'Mountains', marsh:'Marsh / Wetland', tundra:'Tundra', scorched:'Scorched / Volcanic',
+    major:'Major highway', patrol:'Patrol road', track:'Track / pass',
+    dragon_lair:'Dragon Lair', dragon_prefix:'Dragon Lair \u2014 '
+  },
+  fi: {
+    title_word:'Maailmankartta', seed_label:'Siemen:', random:'Satunnainen', regenerate:'Luo uudelleen',
+    show:'N\u00e4yt\u00e4:', tog_biomes:'Elinvy\u00f6hykkeet', tog_factions:'Fraktioiden alueet',
+    tog_roads:'Tieist\u00f6', tog_locations:'Nimetyt paikat', tog_dragons:'Lohik\u00e4rmeiden pes\u00e4t',
+    leg_biomes:'Elinvy\u00f6hykkeet', leg_factions:'Fraktiot', leg_roads:'Tieist\u00f6', leg_locations:'Paikat',
+    deep_ocean:'Syv\u00e4nmeri', shallow_sea:'Matalikko', coast:'Rannikko / Hiekkaranta',
+    plains:'Tasanko / Viljelysmaa', forest:'Synkk\u00e4 mets\u00e4', highlands:'Yl\u00e4nk\u00f6',
+    mountains:'Vuoristo', marsh:'Suo / Kosteikko', tundra:'Tundra', scorched:'Palanut maa / Tulivuorialue',
+    major:'Valtatie', patrol:'Partiotie', track:'Polku / Sola',
+    dragon_lair:'Lohik\u00e4\u00e4rmeen pes\u00e4', dragon_prefix:'Lohik\u00e4\u00e4rmeen pes\u00e4 \u2014 '
+  }
+};
+
+function setLang(lang) {
+  LANG = lang;
+  var ui = MAP_UI[lang];
+  document.getElementById('map-title-word').textContent = ui.title_word;
+  document.getElementById('seed-label').textContent = ui.seed_label;
+  document.getElementById('randomBtn').textContent = ui.random;
+  document.getElementById('regenBtn').textContent = ui.regenerate;
+  document.getElementById('show-label').textContent = ui.show;
+  document.getElementById('tog-biomes').textContent = ui.tog_biomes;
+  document.getElementById('tog-factions').textContent = ui.tog_factions;
+  document.getElementById('tog-roads').textContent = ui.tog_roads;
+  document.getElementById('tog-locations').textContent = ui.tog_locations;
+  document.getElementById('tog-dragons').textContent = ui.tog_dragons;
+  document.getElementById('leg-biomes-title').textContent = ui.leg_biomes;
+  document.getElementById('leg-factions-title').textContent = ui.leg_factions;
+  document.getElementById('leg-roads-title').textContent = ui.leg_roads;
+  document.getElementById('leg-locations-title').textContent = ui.leg_locations;
+  document.getElementById('leg-deep-ocean').textContent = ui.deep_ocean;
+  document.getElementById('leg-shallow-sea').textContent = ui.shallow_sea;
+  document.getElementById('leg-coast').textContent = ui.coast;
+  document.getElementById('leg-plains').textContent = ui.plains;
+  document.getElementById('leg-forest').textContent = ui.forest;
+  document.getElementById('leg-highlands').textContent = ui.highlands;
+  document.getElementById('leg-mountains').textContent = ui.mountains;
+  document.getElementById('leg-marsh').textContent = ui.marsh;
+  document.getElementById('leg-tundra').textContent = ui.tundra;
+  document.getElementById('leg-scorched').textContent = ui.scorched;
+  document.getElementById('leg-major').textContent = ui.major;
+  document.getElementById('leg-patrol').textContent = ui.patrol;
+  document.getElementById('leg-track').textContent = ui.track;
+  document.getElementById('leg-dragon-lair').textContent = ui.dragon_lair;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+document.querySelectorAll('.lang-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){ setLang(btn.dataset.lang); });
+});
+
+// ============================================================
+//  PRNG — mulberry32
+// ============================================================
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function seedFromString(s) {
+  var h = 0;
+  for (var i = 0; i < s.length; i++) { h = Math.imul(31, h) + s.charCodeAt(i) | 0; }
+  return h >>> 0;
+}
+
+// ============================================================
+//  Value noise
+// ============================================================
+function buildNoiseGrid(rng, gridW, gridH) {
+  var grid = new Float32Array(gridW * gridH);
+  for (var i = 0; i < grid.length; i++) { grid[i] = rng(); }
+  return grid;
+}
+
+function smoothStep(t) { return t * t * (3 - 2 * t); }
+
+function sampleNoise(grid, gridW, gridH, nx, ny) {
+  nx = ((nx % 1) + 1) % 1; ny = ((ny % 1) + 1) % 1;
+  var gx = nx * (gridW - 1); var gy = ny * (gridH - 1);
+  var ix = Math.floor(gx) | 0; var iy = Math.floor(gy) | 0;
+  var fx = gx - ix; var fy = gy - iy;
+  var ix1 = Math.min(ix + 1, gridW - 1); var iy1 = Math.min(iy + 1, gridH - 1);
+  fx = smoothStep(fx); fy = smoothStep(fy);
+  var v00 = grid[iy * gridW + ix]; var v10 = grid[iy * gridW + ix1];
+  var v01 = grid[iy1 * gridW + ix]; var v11 = grid[iy1 * gridW + ix1];
+  return v00 + (v10 - v00)*fx + (v01 - v00)*fy + (v00 - v10 - v01 + v11)*fx*fy;
+}
+
+function octaveNoise(grids, nx, ny) {
+  var val = 0, norm = 0;
+  for (var i = 0; i < grids.length; i++) {
+    var g = grids[i];
+    val += sampleNoise(g.grid, g.gw, g.gh, nx * g.scale, ny * g.scale) * g.amp;
+    norm += g.amp;
+  }
+  return val / norm;
+}
+
+// ============================================================
+//  MAP CONSTANTS
+// ============================================================
+var CW = 1200, CH = 900, GRID = 4;
+var GW = Math.ceil(CW / GRID), GH = Math.ceil(CH / GRID);
+
+var FACTION_COLORS = {
+  'steel_throne':[180,120,40,0.35],'ironveil':[60,140,160,0.38],'covenant':[200,160,60,0.38],
+  'vigil':[80,120,200,0.38],'bleached_court':[100,40,120,0.40],'athenaeum':[60,160,140,0.38],
+  'keth_ari':[140,100,180,0.40],'greenskin':[80,120,40,0.38]
+};
+
+var FACTION_NAMES = {
+  'steel_throne':'The Steel Throne','ironveil':'Ironveil Compact','covenant':'Ashen Covenant',
+  'vigil':'The Vigil','bleached_court':'Bleached Court','athenaeum':'The Athenaeum',
+  'keth_ari':"Keth'ari Remnant",'greenskin':'Greenskin Clans'
+};
+
+var LOCATION_COLORS = {
+  'steel_throne':'#d4a030','ironveil':'#40a0b8','covenant':'#c8c040','vigil':'#4060d0',
+  'bleached_court':'#8030a0','athenaeum':'#30b090','keth_ari':'#a070c0','dragon':'#e08020'
+};
+
+var NAMED_LOCATIONS = [
+  {name:'Ironhall',faction:'steel_throne',dragon:false,
+   desc:'Capital of the Steel Throne. Seat of the Iron King.',
+   desc_fi:'Steel Thronen p\u00e4\u00e4kaupunki. Rautakuninkaan valtaistuin.',
+   posHint:[0.42,0.45],biomeWant:['plains','highlands']},
+  {name:'Greyvast',faction:'steel_throne',dragon:false,
+   desc:'Major city; border garrison town.',
+   desc_fi:'Merkitt\u00e4v\u00e4 kaupunki; rajavaruskunta.',
+   posHint:[0.35,0.38],biomeWant:['plains']},
+  {name:'Ashford',faction:'steel_throne',dragon:false,
+   desc:'Agricultural city; breadbasket of the kingdom.',
+   desc_fi:'Maatalouskaupunki; valtakunnan vilja-aitta.',
+   posHint:[0.50,0.52],biomeWant:['plains']},
+  {name:'Dunmere',faction:'steel_throne',dragon:false,
+   desc:'Walled city near the frontier.',
+   desc_fi:'Muurien ymp\u00e4r\u00f6im\u00e4 kaupunki rajaseudun tuntumassa.',
+   posHint:[0.56,0.40],biomeWant:['plains','highlands']},
+  {name:'Salthaven',faction:'ironveil',dragon:false,
+   desc:'Coastal trade port. Gateway to overseas commerce.',
+   desc_fi:'Rannikon kauppasatama. Portti merentakaiseen kauppaan.',
+   posHint:[0.25,0.55],biomeWant:['coast','plains']},
+  {name:'Rivermark',faction:'ironveil',dragon:false,
+   desc:'River junction trade city. Heart of Compact commerce.',
+   desc_fi:'Jokien risteyksen kauppakaupunki. Compactin kaupank\u00e4ynnin syd\u00e4n.',
+   posHint:[0.38,0.58],biomeWant:['plains','coast']},
+  {name:'Coldport',faction:'ironveil',dragon:false,
+   desc:'Northern coastal city; fishermen and fur traders.',
+   desc_fi:'Pohjoinen satamakaupunki; kalastajia ja turkiskauppiaita.',
+   posHint:[0.30,0.25],biomeWant:['coast','plains']},
+  {name:'The Pyre',faction:'covenant',dragon:false,
+   desc:'Cathedral city. Central seat of the Covenant.',
+   desc_fi:'Katedraalikaupunki. Covenantin keskusistuin.',
+   posHint:[0.48,0.38],biomeWant:['plains','highlands']},
+  {name:'Ashgate',faction:'covenant',dragon:false,
+   desc:'Purge-site city. Site of the Great Cleansing.',
+   desc_fi:'Puhdistuksen kaupunki. Suuren puhdistuksen tapahtumapaikka.',
+   posHint:[0.55,0.30],biomeWant:['plains']},
+  {name:'Ironwatch Keep',faction:'vigil',dragon:false,
+   desc:'Primary fortress of the Vigil. Frontier guardian.',
+   desc_fi:'Vigilin p\u00e4\u00e4linnake. Rajaseudun vartija.',
+   posHint:[0.62,0.48],biomeWant:['highlands','plains']},
+  {name:'Duskwall',faction:'vigil',dragon:false,
+   desc:'Border keep. Guards the pass into wild territories.',
+   desc_fi:'Rajalinnake. Vartioi solaa villeihin maihin.',
+   posHint:[0.68,0.35],biomeWant:['highlands','mountains']},
+  {name:'Edgepost',faction:'vigil',dragon:false,
+   desc:'Remote Vigil outpost at the edge of known territory.',
+   desc_fi:'Vigilin syrj\u00e4inen etuvartiosto tunnetun maailman \u00e4\u00e4rell\u00e4.',
+   posHint:[0.72,0.55],biomeWant:['highlands','plains']},
+  {name:'Darkveil Manor',faction:'bleached_court',dragon:false,
+   desc:'Gothic estate of the Bleached Court. Highland castle.',
+   desc_fi:'Bleached Courtin goottilaistyylinen kartano. Yl\u00e4nk\u00f6linna.',
+   posHint:[0.65,0.22],biomeWant:['highlands','mountains']},
+  {name:'Ashenvale Seat',faction:'bleached_court',dragon:false,
+   desc:'Vampire noble estate. Dark forest domain.',
+   desc_fi:'Vampyyriaatelin kartano. Synk\u00e4n mets\u00e4n valtakunta.',
+   posHint:[0.72,0.28],biomeWant:['forest','highlands']},
+  {name:'Spiretop',faction:'athenaeum',dragon:false,
+   desc:'Athenaeum tower-city. Repository of arcane knowledge.',
+   desc_fi:'Athenaeumiin kuuluva torni-kaupunki. Salatieteellisen tiedon varasto.',
+   posHint:[0.60,0.60],biomeWant:['highlands','mountains']},
+  {name:'The Loftspire',faction:'athenaeum',dragon:false,
+   desc:'Remote mage tower. Defensible high position.',
+   desc_fi:'Syrj\u00e4inen maagintorni. Puolustettavissa oleva korkealla sijaitseva asema.',
+   posHint:[0.75,0.65],biomeWant:['mountains','highlands']},
+  {name:"Keth'var Enclave",faction:'keth_ari',dragon:false,
+   desc:"Sealed Keth'ari enclave. Ancient mage civilisation survivors.",
+   desc_fi:"Suljettu Keth'ari-enklaavi. Muinaisen maagisivilisaation j\u00e4ljell\u00e4 j\u00e4\u00e4neit\u00e4.",
+   posHint:[0.78,0.45],biomeWant:['forest','highlands']},
+  {name:'The Bound Ruin',faction:'keth_ari',dragon:false,
+   desc:"Hidden Keth'ari ruin. Still active wards keep outsiders away.",
+   desc_fi:"K\u00e4tketty Keth'ari-raunio. Yh\u00e4 toimivat suojavardat pit\u00e4v\u00e4t ulkopuoliset loitolla.",
+   posHint:[0.82,0.58],biomeWant:['forest','marsh']},
+  {name:'Greymarsh Reaches',faction:'dragon',dragon:true,dragonName:'Sevrath (Ashenwing)',
+   desc:'Lair of Sevrath the Ashenwing. Domain of Entropy.',
+   desc_fi:'Sevrath Tuhkasiiven pes\u00e4. Entropian valtakunta.',
+   posHint:[0.30,0.68],biomeWant:['marsh','coast']},
+  {name:'Ashridge Peaks',faction:'dragon',dragon:true,dragonName:'Kael (Stormcall)',
+   desc:'Lair of Kael the Stormcall. Domain of Elementalism.',
+   desc_fi:'Kael Myrskyhuudon pes\u00e4. Elementalismin valtakunta.',
+   posHint:[0.55,0.20],biomeWant:['mountains']},
+  {name:'Pallid Mere',faction:'dragon',dragon:true,dragonName:'Ohn (Pale)',
+   desc:'Lair of Ohn the Pale. Domain of Necromancy.',
+   desc_fi:'Ohn Kalpean pes\u00e4. Nekromantian valtakunta.',
+   posHint:[0.20,0.20],biomeWant:['tundra','marsh']},
+  {name:'Greenveil',faction:'dragon',dragon:true,dragonName:'Tammauth (Verdant)',
+   desc:'Lair of Tammauth the Verdant. Domain of Naturalism.',
+   desc_fi:'Tammauth Vihre\u00e4n pes\u00e4. Naturalismin valtakunta.',
+   posHint:[0.78,0.72],biomeWant:['forest']},
+  {name:'The Threshold',faction:'dragon',dragon:true,dragonName:'Yreth (Veilborn)',
+   desc:'Lair of Yreth the Veilborn. Domain of Spatial-Temporal magic. Reality tears here.',
+   desc_fi:'Yreth Verhonsyntyneen pes\u00e4. Tila-aikataian valtakunta. Todellisuus repeilee t\u00e4\u00e4ll\u00e4.',
+   posHint:[0.85,0.40],biomeWant:['highlands','mountains']},
+  {name:'The Char',faction:'dragon',dragon:true,dragonName:'Cael (Cinderblood)',
+   desc:'Lair of Cael the Cinderblood. Domain of Vitalism. Volcanic wasteland.',
+   desc_fi:'Cael Tuhkaveren pes\u00e4. Vitalismin valtakunta. Vulkaaninen autio.',
+   posHint:[0.20,0.78],biomeWant:['scorched']},
+];
+
+// ============================================================
+//  BIOME
+// ============================================================
+function getBiome(h, moisture, lat) {
+  if (h < 0.30) return 'deep_ocean';
+  if (h < 0.38) return 'shallow_sea';
+  if (h < 0.43) return 'coast';
+  if (h > 0.82) return 'mountains';
+  if (h > 0.72) return (moisture > 0.5) ? 'highlands' : 'mountains';
+  if (lat < 0.18) return 'tundra';
+  if (lat > 0.88) return (moisture > 0.5) ? 'marsh' : 'plains';
+  if (moisture < 0.15 && h < 0.65) return 'scorched';
+  if (moisture > 0.72 && h < 0.58) return 'marsh';
+  if (h > 0.60) return 'highlands';
+  if (moisture > 0.55) return 'forest';
+  return 'plains';
+}
+
+var BIOME_COLORS = {
+  'deep_ocean':[36,54,82],'shallow_sea':[52,82,108],'coast':[196,180,118],
+  'plains':[148,162,98],'forest':[52,84,52],'highlands':[82,106,88],
+  'mountains':[118,118,118],'marsh':[82,98,56],'tundra':[158,166,174],'scorched':[72,44,28]
+};
+
+function getFactionInfluence(cx, cy, biome, factionAnchors) {
+  if (biome === 'deep_ocean' || biome === 'shallow_sea') return null;
+  var best = null, bestScore = -1;
+  for (var i = 0; i < factionAnchors.length; i++) {
+    var fa = factionAnchors[i];
+    var dx = cx - fa.cx, dy = cy - fa.cy;
+    var dist = Math.sqrt(dx*dx + dy*dy);
+    var score = Math.max(0, 1 - dist / fa.radius);
+    if (fa.biomes.indexOf(biome) >= 0) score += 0.3;
+    score *= fa.weight;
+    if (score > bestScore) { bestScore = score; best = fa.id; }
+  }
+  if (bestScore < 0.1) return null;
+  return best;
+}
+
+var ROAD_CONNECTIONS = [
+  ['Salthaven','Rivermark','major'],['Rivermark','Greyvast','major'],
+  ['Rivermark','Ironhall','major'],['Greyvast','Ironhall','major'],
+  ['Coldport','Greyvast','major'],['Ironhall','Ashford','major'],
+  ['Ironhall','Dunmere','major'],['Ashford','Ironwatch Keep','major'],
+  ['Ironhall','The Pyre','patrol'],['The Pyre','Ashgate','patrol'],
+  ['The Pyre','Dunmere','patrol'],['Ironwatch Keep','Duskwall','patrol'],
+  ['Ironwatch Keep','Edgepost','patrol'],['Duskwall','Darkveil Manor','track'],
+  ['Darkveil Manor','Ashenvale Seat','track'],['Ashford','Spiretop','track'],
+  ['Spiretop','The Loftspire','track'],['Edgepost','The Loftspire','track'],
+  ["Keth'var Enclave",'The Bound Ruin','track'],['The Loftspire',"Keth'var Enclave",'track'],
+];
+
+function drawRoads(placedLocations) {
+  if (!document.getElementById('togRoads').checked) return;
+  var byName = {};
+  for (var i = 0; i < placedLocations.length; i++) byName[placedLocations[i].loc.name] = placedLocations[i];
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (var r = 0; r < ROAD_CONNECTIONS.length; r++) {
+    var conn = ROAD_CONNECTIONS[r];
+    var a = byName[conn[0]], b = byName[conn[1]];
+    if (!a || !b) continue;
+    var type = conn[2];
+    var sw = type === 'major' ? 2.5 : type === 'patrol' ? 1.8 : 1.2;
+    var bw = sw + 1.8;
+    var sc = type === 'major' ? 'rgba(210,180,110,0.80)' : type === 'patrol' ? 'rgba(170,148,88,0.70)' : 'rgba(130,108,68,0.55)';
+    var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    var dx = b.x - a.x, dy = b.y - a.y;
+    var len = Math.sqrt(dx*dx + dy*dy) || 1;
+    var curve = len * 0.06;
+    var cpx = mx + (-dy / len) * curve, cpy = my + (dx / len) * curve;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(cpx, cpy, b.x, b.y);
+    ctx.strokeStyle = 'rgba(20,14,6,0.55)'; ctx.lineWidth = bw; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(cpx, cpy, b.x, b.y);
+    ctx.strokeStyle = sc; ctx.lineWidth = sw; ctx.stroke();
+  }
+  ctx.restore();
+}
+
+var canvas = document.getElementById('mapCanvas');
+var ctx = canvas.getContext('2d');
+var tooltip = document.getElementById('tooltip');
+var ttName = document.getElementById('ttName');
+var ttFaction = document.getElementById('ttFaction');
+var ttDesc = document.getElementById('ttDesc');
+var mapState = null;
+
+function generateMap(seedStr) {
+  var seed = seedFromString(seedStr || 'varek');
+  var rng = mulberry32(seed);
+  var hGrids = [
+    {grid:buildNoiseGrid(rng,9,9),gw:9,gh:9,scale:1.0,amp:1.0},
+    {grid:buildNoiseGrid(rng,17,17),gw:17,gh:17,scale:2.0,amp:0.5},
+    {grid:buildNoiseGrid(rng,33,33),gw:33,gh:33,scale:4.0,amp:0.25},
+  ];
+  var mGrids = [
+    {grid:buildNoiseGrid(rng,11,11),gw:11,gh:11,scale:1.0,amp:1.0},
+    {grid:buildNoiseGrid(rng,21,21),gw:21,gh:21,scale:2.5,amp:0.4},
+  ];
+  var W = GW, H = GH;
+  var heights = new Float32Array(W*H), moistures = new Float32Array(W*H), biomes = new Array(W*H);
+  var cxBias = 0.48 + (rng() - 0.5)*0.08, cyBias = 0.50 + (rng() - 0.5)*0.06;
+  for (var gy = 0; gy < H; gy++) {
+    for (var gx = 0; gx < W; gx++) {
+      var nx = gx/(W-1), ny = gy/(H-1);
+      var dx = (nx-cxBias)*1.4, dy = (ny-cyBias)*1.2;
+      var nd = octaveNoise(hGrids, nx*2.5, ny*2.5) - 0.5;
+      var cm = 1.0 - Math.sqrt(dx*dx+dy*dy)*1.35 + nd*0.35;
+      var h = octaveNoise(hGrids, nx, ny)*0.6 + cm*0.4;
+      if (ny < 0.15) h -= (0.15-ny)*1.2;
+      if (ny > 0.88) h -= (ny-0.88)*1.5;
+      if (nx < 0.08) h -= (0.08-nx)*2.0;
+      if (nx > 0.92) h -= (nx-0.92)*2.0;
+      h = Math.max(0, Math.min(1, h*0.85+0.15));
+      var m = octaveNoise(mGrids, nx+10, ny+10);
+      heights[gy*W+gx] = h; moistures[gy*W+gx] = m;
+      var nl = ny + (octaveNoise(mGrids, nx*3.5+5, ny*3.5+5) - 0.5)*0.16;
+      biomes[gy*W+gx] = getBiome(h, m, nl);
+    }
+  }
+  var jr = mulberry32(seed+1);
+  function jit(v,r){return v+(jr()-0.5)*r;}
+  var factionAnchors = [
+    {id:'steel_throne',cx:jit(0.45,0.05),cy:jit(0.46,0.05),radius:0.28,weight:1.0,biomes:['plains','highlands','coast']},
+    {id:'ironveil',cx:jit(0.28,0.04),cy:jit(0.50,0.04),radius:0.20,weight:0.85,biomes:['coast','plains']},
+    {id:'covenant',cx:jit(0.50,0.04),cy:jit(0.34,0.04),radius:0.18,weight:0.80,biomes:['plains','highlands']},
+    {id:'vigil',cx:jit(0.66,0.04),cy:jit(0.42,0.04),radius:0.18,weight:0.75,biomes:['highlands','plains','mountains']},
+    {id:'bleached_court',cx:jit(0.68,0.04),cy:jit(0.25,0.04),radius:0.17,weight:0.75,biomes:['highlands','forest','mountains']},
+    {id:'athenaeum',cx:jit(0.68,0.04),cy:jit(0.62,0.04),radius:0.17,weight:0.70,biomes:['highlands','mountains','plains']},
+    {id:'keth_ari',cx:jit(0.80,0.04),cy:jit(0.50,0.04),radius:0.16,weight:0.68,biomes:['forest','highlands']},
+    {id:'greenskin',cx:jit(0.56,0.04),cy:jit(0.65,0.04),radius:0.22,weight:0.65,biomes:['forest','marsh','highlands']},
+  ];
+  var factionMap = new Array(W*H).fill(null);
+  for (var gy2 = 0; gy2 < H; gy2++) {
+    for (var gx2 = 0; gx2 < W; gx2++) {
+      factionMap[gy2*W+gx2] = getFactionInfluence(gx2/(W-1), gy2/(H-1), biomes[gy2*W+gx2], factionAnchors);
+    }
+  }
+  var placedLocations = [];
+  for (var li = 0; li < NAMED_LOCATIONS.length; li++) {
+    var loc = NAMED_LOCATIONS[li];
+    var hx = loc.posHint[0], hy = loc.posHint[1];
+    var best = null, bestDist = 999;
+    for (var sy = 0; sy < H; sy++) {
+      for (var sx = 0; sx < W; sx++) {
+        var snx = sx/(W-1), sny = sy/(H-1);
+        var sdx = snx-hx, sdy = sny-hy;
+        var sd = Math.sqrt(sdx*sdx+sdy*sdy);
+        if (sd > 0.15) continue;
+        var sb = biomes[sy*W+sx];
+        if (sb === 'deep_ocean' || sb === 'shallow_sea') continue;
+        var ad = sd + ((loc.biomeWant.indexOf(sb) >= 0) ? 0 : 0.08);
+        if (ad < bestDist) { bestDist = ad; best = {gx:sx,gy:sy,biome:sb}; }
+      }
+    }
+    if (best) placedLocations.push({x:best.gx*GRID+GRID/2, y:best.gy*GRID+GRID/2, biome:best.biome, loc:loc});
+  }
+  return {heights, moistures, biomes, factionMap, placedLocations, W, H, factionAnchors};
+}
+
+function renderMap(state) {
+  var {heights, biomes, factionMap, placedLocations, W, H} = state;
+  var showBiomes = document.getElementById('togBiomes').checked;
+  var showFactions = document.getElementById('togFactions').checked;
+  var showLocations = document.getElementById('togLocations').checked;
+  var showDragons = document.getElementById('togDragons').checked;
+
+  ctx.fillStyle = '#1a1510'; ctx.fillRect(0, 0, CW, CH);
+
+  var imgData = ctx.createImageData(CW, CH); var data = imgData.data;
+  for (var py = 0; py < CH; py++) {
+    for (var px = 0; px < CW; px++) {
+      var gx = Math.min(Math.floor(px/GRID), W-1);
+      var gy = Math.min(Math.floor(py/GRID), H-1);
+      var idx = gy*W+gx; var biome = biomes[idx];
+      var col = BIOME_COLORS[biome] || [80,80,80];
+      var pidx = (py*CW+px)*4;
+      if (showBiomes) {
+        data[pidx]=col[0]; data[pidx+1]=col[1]; data[pidx+2]=col[2]; data[pidx+3]=255;
+      } else {
+        var h = heights[idx]; var isO = (biome==='deep_ocean'||biome==='shallow_sea');
+        var v = isO ? Math.floor(h*80+20) : Math.floor(h*180+40);
+        data[pidx]=v; data[pidx+1]=v; data[pidx+2]=v; data[pidx+3]=255;
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  if (showFactions) {
+    var fi2 = ctx.createImageData(CW, CH); var fd = fi2.data;
+    for (var py2 = 0; py2 < CH; py2++) {
+      for (var px2 = 0; px2 < CW; px2++) {
+        var gx2 = Math.min(Math.floor(px2/GRID), W-1);
+        var gy2 = Math.min(Math.floor(py2/GRID), H-1);
+        var faction = factionMap[gy2*W+gx2];
+        if (faction && FACTION_COLORS[faction]) {
+          var fc = FACTION_COLORS[faction]; var pi2 = (py2*CW+px2)*4;
+          fd[pi2]=fc[0]; fd[pi2+1]=fc[1]; fd[pi2+2]=fc[2]; fd[pi2+3]=Math.floor(fc[3]*255);
+        }
+      }
+    }
+    var tmp = document.createElement('canvas'); tmp.width=CW; tmp.height=CH;
+    tmp.getContext('2d').putImageData(fi2, 0, 0); ctx.drawImage(tmp, 0, 0);
+    ctx.save(); ctx.font='bold 11px Georgia, serif'; ctx.textAlign='center';
+    for (var fi = 0; fi < state.factionAnchors.length; fi++) {
+      var fa = state.factionAnchors[fi]; var fc2 = FACTION_COLORS[fa.id];
+      if (!fc2) continue;
+      var lx = fa.cx*CW, ly = fa.cy*CH;
+      ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=4;
+      ctx.fillStyle='rgba('+fc2[0]+','+fc2[1]+','+fc2[2]+',0.85)';
+      var fname = FACTION_NAMES[fa.id] || fa.id;
+      var words = fname.split(' ');
+      if (words.length > 2) {
+        ctx.fillText(words.slice(0,Math.ceil(words.length/2)).join(' '), lx, ly-6);
+        ctx.fillText(words.slice(Math.ceil(words.length/2)).join(' '), lx, ly+8);
+      } else { ctx.fillText(fname, lx, ly); }
+      ctx.shadowBlur=0;
+    }
+    ctx.restore();
+  }
+
+  drawRoads(placedLocations);
+
+  var vg = ctx.createRadialGradient(CW/2,CH/2,CH*0.35,CW/2,CH/2,CH*0.72);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.45)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,CW,CH);
+
+  function drawLocs(isDragon) {
+    for (var i = 0; i < placedLocations.length; i++) {
+      var pl = placedLocations[i]; var loc = pl.loc;
+      if (loc.dragon !== isDragon) continue;
+      if (isDragon && !showDragons) continue;
+      if (!isDragon && !showLocations) continue;
+      var x = pl.x, y = pl.y; var col = LOCATION_COLORS[loc.faction] || '#fff';
+      ctx.save();
+      if (isDragon) {
+        ctx.font='bold 18px Georgia, serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=6; ctx.fillStyle=col;
+        ctx.fillText('\u2605',x,y); ctx.shadowColor=col; ctx.shadowBlur=10;
+        ctx.fillText('\u2605',x,y); ctx.shadowBlur=0;
+      } else {
+        ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=4;
+        ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fillStyle=col; ctx.fill();
+        ctx.strokeStyle='rgba(0,0,0,0.7)'; ctx.lineWidth=1; ctx.stroke(); ctx.shadowBlur=0;
+      }
+      ctx.font=isDragon?'italic 11px Georgia, serif':'11px Georgia, serif';
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      var lx=x+(isDragon?11:8), ly=y;
+      ctx.fillStyle='rgba(0,0,0,0.85)'; ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=6;
+      for (var ox=-1;ox<=1;ox++) for (var oy=-1;oy<=1;oy++) ctx.fillText(loc.name,lx+ox,ly+oy);
+      ctx.fillStyle=isDragon?'#f0c060':'#e8d8b8'; ctx.shadowBlur=0; ctx.fillText(loc.name,lx,ly);
+      if (isDragon) {
+        ctx.font='9px Georgia, serif'; ctx.fillStyle='#c0a050'; ctx.fillText(loc.dragonName,lx,ly+12);
+      }
+      ctx.restore();
+    }
+  }
+  drawLocs(false); drawLocs(true);
+
+  ctx.save();
+  ctx.strokeStyle='#6a5030'; ctx.lineWidth=3; ctx.strokeRect(2,2,CW-4,CH-4);
+  ctx.strokeStyle='#4a3820'; ctx.lineWidth=1; ctx.strokeRect(8,8,CW-16,CH-16);
+  ctx.restore();
+  ctx.save(); ctx.font='italic bold 36px Georgia, serif';
+  ctx.textAlign='right'; ctx.textBaseline='bottom';
+  ctx.fillStyle='rgba(180,150,80,0.08)'; ctx.fillText('VAREK',CW-20,CH-20);
+  ctx.restore();
+}
+
+function buildAndRender() {
+  mapState = generateMap(document.getElementById('seedInput').value.trim() || 'varek');
+  renderMap(mapState);
+}
+
+canvas.addEventListener('mousemove', function(e) {
+  if (!mapState) return;
+  var rect = canvas.getBoundingClientRect();
+  var mx = (e.clientX-rect.left)*(canvas.width/rect.width);
+  var my = (e.clientY-rect.top)*(canvas.height/rect.height);
+  var showL = document.getElementById('togLocations').checked;
+  var showD = document.getElementById('togDragons').checked;
+  var hit = null;
+  for (var i = 0; i < mapState.placedLocations.length; i++) {
+    var pl = mapState.placedLocations[i];
+    if (pl.loc.dragon && !showD) continue;
+    if (!pl.loc.dragon && !showL) continue;
+    var dx = mx-pl.x, dy = my-pl.y;
+    if (Math.sqrt(dx*dx+dy*dy) < 14) { hit = pl; break; }
+  }
+  if (hit) {
+    var loc = hit.loc;
+    ttName.textContent = loc.name;
+    ttFaction.textContent = loc.dragon
+      ? MAP_UI[LANG].dragon_prefix + (loc.dragonName || '')
+      : (FACTION_NAMES[loc.faction] || loc.faction);
+    ttDesc.textContent = (LANG === 'fi' && loc.desc_fi) ? loc.desc_fi : loc.desc;
+    tooltip.style.display='block';
+    tooltip.style.left=(e.clientX+16)+'px'; tooltip.style.top=(e.clientY-10)+'px';
+    canvas.style.cursor='pointer';
+  } else {
+    tooltip.style.display='none'; canvas.style.cursor='crosshair';
+  }
+});
+
+canvas.addEventListener('mouseleave', function() {
+  tooltip.style.display='none'; canvas.style.cursor='crosshair';
+});
+
+document.getElementById('regenBtn').addEventListener('click', buildAndRender);
+document.getElementById('seedInput').addEventListener('keydown', function(e){ if(e.key==='Enter') buildAndRender(); });
+function stepSeed(d) {
+  var inp=document.getElementById('seedInput'); var n=parseInt(inp.value,10);
+  inp.value=String(isNaN(n)?d:n+d); buildAndRender();
+}
+document.getElementById('prevBtn').addEventListener('click', function(){stepSeed(-1);});
+document.getElementById('nextBtn').addEventListener('click', function(){stepSeed(+1);});
+document.getElementById('randomBtn').addEventListener('click', function(){
+  document.getElementById('seedInput').value=String(Math.floor(Math.random()*999999)+1);
+  buildAndRender();
+});
+['togBiomes','togFactions','togRoads','togLocations','togDragons'].forEach(function(id){
+  document.getElementById(id).addEventListener('change', function(){ if(mapState) renderMap(mapState); });
+});
+
+buildAndRender();
+</script>
+</body>
+</html>

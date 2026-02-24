@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Varek — Factions</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0e0e14;color:#c8c0b0;font-family:'Georgia',serif;min-height:100vh;display:flex;flex-direction:column}
+
+header{background:#0a0a10;border-bottom:1px solid #2a2a3d;padding:28px 48px 24px;display:flex;align-items:flex-start;justify-content:space-between}
+header h1{color:#c9a84c;font-size:1.8rem;letter-spacing:.1em;font-weight:normal;margin-bottom:6px}
+header p{color:#5a5468;font-size:.85rem;letter-spacing:.05em}
+
+main{flex:1;padding:48px;max-width:1100px;margin:0 auto;width:100%}
+
+.intro{color:#7a7288;font-size:.9rem;line-height:1.8;max-width:620px;margin-bottom:48px;border-left:2px solid #2a2a3d;padding-left:18px}
+
+.section-label{color:#4a4458;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:20px}
+
+.factions{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-bottom:56px}
+
+.faction-card{background:#141420;border:1px solid #1e1e2e;border-radius:5px;padding:26px 28px;cursor:pointer;transition:border-color .2s,background .2s;position:relative;overflow:hidden}
+.faction-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:#2a2a3d;transition:background .2s}
+.faction-card:hover{border-color:#3a3a5a;background:#181828}
+.faction-card:hover::before{background:#c9a84c}
+
+.faction-icon{font-size:2rem;margin-bottom:12px;display:block}
+.faction-name{color:#c9a84c;font-size:1.1rem;font-weight:normal;margin-bottom:4px;letter-spacing:.04em}
+.faction-subtitle{color:#5a5468;font-size:.78rem;font-style:italic;margin-bottom:10px;letter-spacing:.03em}
+.faction-type{color:#7a7288;font-size:.8rem;margin-bottom:12px;line-height:1.5}
+.faction-quote{color:#5a5468;font-size:.78rem;font-style:italic;line-height:1.6;border-left:2px solid #2a2a3d;padding-left:12px;margin-top:12px}
+.faction-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.faction-tag{font-size:.65rem;padding:2px 7px;border-radius:2px;background:#1e1e2e;color:#5a5468;letter-spacing:.06em;text-transform:uppercase}
+.faction-expand{position:absolute;bottom:18px;right:20px;color:#3a3a5a;font-size:.75rem;letter-spacing:.06em;transition:color .2s}
+.faction-card:hover .faction-expand{color:#c9a84c}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:100;overflow-y:auto;padding:40px 20px}
+.modal-overlay.active{display:flex;justify-content:center;align-items:flex-start}
+.modal{background:#141420;border:1px solid #2a2a3d;border-radius:6px;max-width:760px;width:100%;padding:40px 44px;position:relative;margin:20px auto}
+
+.modal-close{position:absolute;top:16px;right:20px;background:none;border:none;color:#5a5468;font-size:1.4rem;cursor:pointer;font-family:'Georgia',serif;transition:color .2s}
+.modal-close:hover{color:#c9a84c}
+
+.modal .faction-icon{font-size:2.4rem;margin-bottom:16px}
+.modal .faction-name{font-size:1.4rem;margin-bottom:6px}
+.modal .faction-subtitle{font-size:.88rem;margin-bottom:16px}
+
+.modal-section{margin-top:28px}
+.modal-section h3{color:#c9a84c;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #1e1e2e}
+.modal-section p{color:#c8c0b0;font-size:.88rem;line-height:1.75;margin-bottom:12px}
+
+.modal-quote{color:#7a7288;font-size:.88rem;font-style:italic;line-height:1.7;border-left:3px solid #c9a84c;padding-left:16px;margin:20px 0}
+
+.rel-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.rel-item{font-size:.82rem;line-height:1.5;padding:8px 12px;border-radius:3px;background:#0e0e14}
+.rel-ally{border-left:3px solid #4a7a4a}
+.rel-enemy{border-left:3px solid #8a3a3a}
+.rel-neutral{border-left:3px solid #5a5468}
+.rel-label{color:#5a5468;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:3px}
+.rel-name{color:#c8c0b0}
+
+.tension-item{font-size:.85rem;color:#7a7288;line-height:1.7;padding-left:14px;position:relative;margin-bottom:6px}
+.tension-item::before{content:'\2022';position:absolute;left:0;color:#c9a84c}
+
+/* Relationship matrix */
+.matrix-section{margin-top:60px;margin-bottom:56px}
+.matrix-wrap{overflow-x:auto;padding-bottom:12px}
+.matrix{border-collapse:collapse;font-size:.68rem;width:100%;min-width:700px}
+.matrix th,.matrix td{padding:6px 4px;text-align:center;border:1px solid #1e1e2e}
+.matrix th{background:#0a0a10;color:#c9a84c;font-weight:normal;letter-spacing:.04em}
+.matrix th.row-head{text-align:right;padding-right:10px;color:#c8c0b0;min-width:100px}
+.matrix .r-ally{background:#1a2a1a;color:#6a9a6a}
+.matrix .r-tense{background:#2a1a1a;color:#9a6a6a}
+.matrix .r-neutral{background:#141420;color:#5a5468}
+.matrix .r-cold{background:#1e1a1a;color:#7a5a5a}
+.matrix .r-warm{background:#1a201a;color:#5a7a5a}
+.matrix .r-self{background:#1e1e2e;color:#3a3a5a}
+
+.lang-switch{display:flex;gap:4px;flex-shrink:0;margin-top:6px}
+.lang-btn{background:none;border:1px solid #2a2a3d;color:#5a5468;font-family:'Georgia',serif;font-size:.72rem;padding:3px 10px;cursor:pointer;letter-spacing:.08em;border-radius:2px;transition:border-color .2s,color .2s}
+.lang-btn.active{border-color:#c9a84c;color:#c9a84c}
+.lang-btn:hover:not(.active){border-color:#3a3a5a;color:#8a8098}
+
+.back-link{color:#5a5468;font-size:.82rem;text-decoration:none;letter-spacing:.04em;transition:color .2s;display:inline-block;margin-bottom:32px}
+.back-link:hover{color:#c9a84c}
+
+/* Lore sections */
+.lore-block{margin-bottom:48px}
+.lore-toggle{background:none;border:1px solid #1e1e2e;color:#c9a84c;font-family:'Georgia',serif;font-size:.88rem;padding:14px 22px;cursor:pointer;letter-spacing:.04em;border-radius:4px;width:100%;text-align:left;transition:border-color .2s,background .2s;display:flex;justify-content:space-between;align-items:center}
+.lore-toggle:hover{border-color:#3a3a5a;background:#141420}
+.lore-toggle .toggle-arrow{color:#3a3a5a;transition:transform .25s,color .2s;font-size:.7rem}
+.lore-toggle:hover .toggle-arrow{color:#c9a84c}
+.lore-toggle.open .toggle-arrow{transform:rotate(90deg)}
+.lore-body{display:none;padding:28px 26px 20px;border:1px solid #1e1e2e;border-top:none;border-radius:0 0 4px 4px;background:#111118}
+.lore-body.open{display:block}
+.lore-body p{color:#c8c0b0;font-size:.88rem;line-height:1.8;margin-bottom:16px}
+.lore-body p:last-child{margin-bottom:0}
+.lore-body .lore-subhead{color:#c9a84c;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;margin:24px 0 10px;padding-bottom:5px;border-bottom:1px solid #1e1e2e}
+.lore-body .lore-subhead:first-child{margin-top:0}
+.lore-body blockquote{color:#7a7288;font-size:.85rem;font-style:italic;line-height:1.7;border-left:3px solid #c9a84c;padding-left:16px;margin:16px 0}
+.lore-body .awakened-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.82rem}
+.lore-body .awakened-table td{padding:8px 12px;border:1px solid #1e1e2e;vertical-align:top}
+.lore-body .awakened-table td:first-child{color:#c9a84c;white-space:nowrap;width:100px}
+.lore-body .awakened-table td:last-child{color:#7a7288;line-height:1.6}
+
+footer{padding:24px 48px;border-top:1px solid #1a1a26;color:#2a2a3d;font-size:.75rem;letter-spacing:.05em;display:flex;justify-content:space-between}
+
+@media(max-width:700px){
+  header{padding:20px 24px 18px}
+  main{padding:28px 24px}
+  .factions{grid-template-columns:1fr}
+  .rel-grid{grid-template-columns:1fr}
+  .modal{padding:28px 24px}
+  footer{padding:18px 24px;flex-direction:column;gap:4px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1 id="hdr-title">FACTIONS OF VAREK</h1>
+    <p id="hdr-subtitle">Ten powers that shape the world &mdash; their ambitions, contradictions, and grudges</p>
+  </div>
+  <div class="lang-switch">
+    <button class="lang-btn active" data-lang="en">EN</button>
+    <button class="lang-btn" data-lang="fi">FI</button>
+  </div>
+</header>
+
+<main>
+  <a class="back-link" href="varek_observatory.html" id="back-link">&larr; Observatory</a>
+
+  <p class="intro" id="intro-text">
+    There are no gods in Varek. What remains are institutions &mdash; built by mortals,
+    sustained by belief, corrupted by time. Each faction has a public face and a private
+    reality. The gap between the two is where the interesting stories live.
+  </p>
+
+  <div class="lore-block">
+    <button class="lore-toggle" id="lore-world-toggle" onclick="toggleLore('world')">
+      <span id="lore-world-title">The World of Varek</span>
+      <span class="toggle-arrow">&#9654;</span>
+    </button>
+    <div class="lore-body" id="lore-world-body"></div>
+  </div>
+
+  <div class="lore-block">
+    <button class="lore-toggle" id="lore-awakened-toggle" onclick="toggleLore('awakened')">
+      <span id="lore-awakened-title">The Awakened</span>
+      <span class="toggle-arrow">&#9654;</span>
+    </button>
+    <div class="lore-body" id="lore-awakened-body"></div>
+  </div>
+
+  <div class="section-label" id="section-factions">The Ten Factions</div>
+
+  <div class="factions" id="faction-grid"></div>
+
+  <div class="matrix-section">
+    <div class="section-label" id="section-relations">Faction Relations</div>
+    <div class="matrix-wrap">
+      <table class="matrix" id="rel-matrix"></table>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<footer>
+  <span id="footer-l">Factions of Varek &mdash; The Observatory</span>
+  <span id="footer-r">The Navigator</span>
+</footer>
+
+<script>
+var LANG = 'en';
+
+var T = {
+  en: {
+    title: 'FACTIONS OF VAREK',
+    subtitle: 'Ten powers that shape the world \u2014 their ambitions, contradictions, and grudges',
+    intro: 'There are no gods in Varek. What remains are institutions \u2014 built by mortals, sustained by belief, corrupted by time. Each faction has a public face and a private reality. The gap between the two is where the interesting stories live.',
+    back: '\u2190 Observatory',
+    section_factions: 'The Ten Factions',
+    section_relations: 'Faction Relations',
+    details: 'Details \u2197',
+    lbl_identity: 'Core Identity',
+    lbl_tensions: 'Internal Tensions',
+    lbl_relations: 'Key Relationships',
+    lbl_dark: 'The Dark Reality',
+    lbl_ally: 'Ally',
+    lbl_enemy: 'Enemy',
+    lbl_neutral: 'Neutral',
+    lore_world_title: 'The World of Varek',
+    lore_awakened_title: 'The Awakened',
+    lore_world: [
+      { type: 'p', text: 'Varek is a world without gods. If divine powers ever existed, they left no proof and no forwarding address. What remains are mortals, institutions, and the long consequences of decisions made by people who believed they understood what they were doing.' },
+      { type: 'sub', text: 'The Keth\u2019ari and the Accord' },
+      { type: 'p', text: 'Before human kingdoms, before the factions, elven civilization spanned the continent. The Keth\u2019ari Empire was not built on conquest but on a shared framework governing all magical practice \u2014 the Accord. It was less a law than a grammar: formal structures within which magic was conducted, reducing the ambient residue that unregulated practice bleeds into the world. For millennia, it kept Varek in equilibrium.' },
+      { type: 'p', text: 'The Keth\u2019ari\u2019s most accomplished Temporal practitioners attempted a working of extraordinary scale. What they perceived through deep Temporal sight \u2014 what threat justified the attempt \u2014 was never recorded. The working failed catastrophically. Temporal magic does not fail the way other schools fail. The practitioners aged erratically, displaced through time, or simply ceased to exist. The knowledge required to maintain the Accord died with them.' },
+      { type: 'sub', text: 'The Collapse and What Followed' },
+      { type: 'p', text: 'The Accord unraveled over sixty to eighty years. Each generation understood slightly less than the one before. City-states began interpreting it differently, then ignoring it, then forgetting what it had been for. Within a century, it was functionally dead. This is the event the Ashen Covenant calls the Severance. They are correct that something broke. They are wrong about what it was.' },
+      { type: 'p', text: 'Without the Accord, magical practice became unregulated for the first time in millennia. Every hedge practitioner, every self-taught mage, every desperate healer working by instinct rather than form \u2014 all of them bleeding mana residue into the world. The Keth\u2019ari withdrew into isolated enclaves. Human kingdoms rose in the vacuum. The dragons watched all of it and said nothing.' },
+      { type: 'sub', text: 'The Present Age' },
+      { type: 'p', text: 'The ten factions that shape Varek today emerged from this fractured history. The Steel Throne consolidated human territory through force and bureaucracy. The Vigil chose discipline over divinity. The Ashen Covenant built sincere theology on incorrect metaphysics. The Thornbound took in everyone the other factions rejected. Each faction is a different answer to the same question: what do you do when the world has no gods, no framework, and no one in charge?' },
+      { type: 'quote', text: 'History in Varek is not a story. It is a collection of contradictions, half-burned manuscripts, and the silence of things old enough to know better.' }
+    ],
+    lore_awakened: [
+      { type: 'p', text: 'Around a century ago, something changed. Creatures that had been beasts since the world began started thinking. Started speaking. Started being.' },
+      { type: 'sub', text: 'The Saturation' },
+      { type: 'p', text: 'Over centuries, the cumulative use of magic left a residue in the world. Each working leaves a trace \u2014 scholars compare it to salt in soil. Around one hundred years ago, the ambient mana concentration crossed a threshold. No single event triggered it. No ritual, no war, no god reached down. The world simply responded to what had been poured into it for centuries, the way a body responds to a slow poison: not all at once, but irreversibly.' },
+      { type: 'p', text: 'The Covenant\u2019s three-hundred-year campaign to suppress magic may have directly accelerated this. Practitioners driven underground work frightened and fast. Panicked magic is sloppy magic. Sloppy magic bleeds more residue. The institution that most feared magic\u2019s corruption may have caused it through the very act of fighting it.' },
+      { type: 'sub', text: 'What Awakening Is' },
+      { type: 'p', text: 'At rare, unpredictable intervals, a creature that should be nothing more than instinct and hunger becomes someone. Speech arrives. Then memory. Then the terrible weight of self-awareness \u2014 including the memory of what they were before. It is not a gift. It is not a curse. It simply happens.' },
+      { type: 'p', text: 'Physically, they are unchanged \u2014 an awakened minotaur is still enormous, an awakened harpy still has wings and talons. Mentally, they are fully sapient: language, emotion, memory, self-determination. Most carry the trauma of what they were. Some remember killing. Some have made peace. Some never will.' },
+      { type: 'sub', text: 'Known Awakened Types' },
+      { type: 'table', rows: [
+        ['Minotaurs', 'Most common. Often physically powerful, frequently gentle \u2014 as if aware of what that power once meant. Drawn to craft, agriculture, solitude.'],
+        ['Harpies', 'Tend toward isolation. Their voices, once used to lure, now carry language \u2014 some find this unbearable.'],
+        ['Trolls', 'Slow to speak, deep thinkers. Often wander for years before entering society.'],
+        ['Ogres', 'Some have integrated into labor roles in tolerant cities. Frequently exploited. Aware of being exploited.'],
+        ['Gorgons', 'Extraordinarily rare. A gorgon who has awakened is one of the most dangerous beings alive \u2014 not from malice, but from grief.'],
+        ['Manticores', 'The few known awakened manticores live alone. None have attempted society.']
+      ]},
+      { type: 'sub', text: 'The World\u2019s Reaction' },
+      { type: 'p', text: 'Every faction sees the Awakened differently. The Covenant calls them "the Corruption" and hunts them without mercy. The Thornbound calls it "the Waking" and says it with reverence. The Ironveil Compact calls it "the Shift" and adapts. The Bleached Court calls it "the Entertainment." The Steel Throne calls it "the Problem." Common people react across the full human spectrum \u2014 fear, curiosity, pity, admiration, friendship, hatred. A child who grows up next to an awakened troll may think nothing of it. A farmer who lost livestock to that same troll\u2019s former self may never forgive it.' },
+      { type: 'quote', text: 'You round a corner in a market and there is a minotaur tending a flower stall. He does not look up. He is deadheading roses with enormous, careful hands. The world did not stop for this. Neither does it stop for you.' }
+    ],
+    footer_l: 'Factions of Varek \u2014 The Observatory',
+    footer_r: 'The Navigator'
+  },
+  fi: {
+    title: 'VAREKIN FRAKTIOT',
+    subtitle: 'Kymmenen voimaa jotka muokkaavat maailmaa \u2014 kunnianhimonsa, ristiriitansa ja kaunansa',
+    intro: 'Varekissa ei ole jumalia. J\u00e4ljelle j\u00e4\u00e4v\u00e4t instituutiot \u2014 kuolevaisten rakentamia, uskon yll\u00e4pit\u00e4mi\u00e4, ajan turmelemia. Jokaisella fraktiolla on julkiset kasvot ja yksityinen todellisuus. N\u00e4iden v\u00e4linen kuilu on se, miss\u00e4 mielenkiintoiset tarinat el\u00e4v\u00e4t.',
+    back: '\u2190 Observatorio',
+    section_factions: 'Kymmenen fraktiota',
+    section_relations: 'Fraktioiden suhteet',
+    details: 'Tiedot \u2197',
+    lbl_identity: 'Ydinidentiteetti',
+    lbl_tensions: 'Sis\u00e4iset j\u00e4nnitteet',
+    lbl_relations: 'Keskeiset suhteet',
+    lbl_dark: 'Synkk\u00e4 todellisuus',
+    lbl_ally: 'Liittolainen',
+    lbl_enemy: 'Vihollinen',
+    lbl_neutral: 'Neutraali',
+    lore_world_title: 'Varekin maailma',
+    lore_awakened_title: 'Her\u00e4nneet',
+    lore_world: [
+      { type: 'p', text: 'Varek on maailma ilman jumalia. Jos jumalallisia voimia on koskaan ollut, ne eiv\u00e4t j\u00e4tt\u00e4neet todisteita eiv\u00e4tk\u00e4 j\u00e4lkil\u00e4hetysosoitetta. J\u00e4ljelle j\u00e4\u00e4v\u00e4t kuolevaiset, instituutiot ja pitk\u00e4t seuraukset p\u00e4\u00e4t\u00f6ksist\u00e4, joita tekiv\u00e4t ihmiset, jotka uskoivat ymm\u00e4rt\u00e4v\u00e4ns\u00e4 mit\u00e4 tekiv\u00e4t.' },
+      { type: 'sub', text: 'Keth\u2019arit ja Sopimus' },
+      { type: 'p', text: 'Ennen ihmiskuntien aikaa, ennen fraktioita, haltiasivilisaatio ulottui koko mantereelle. Keth\u2019ari-imperiumia ei rakennettu valloitukselle vaan yhteiselle viitekehykselle, joka hallitsi kaikkea magian harjoittamista \u2014 Sopimukselle. Se oli v\u00e4hemm\u00e4n laki kuin kielioppi: muodolliset rakenteet, joiden puitteissa magiaa harjoitettiin, v\u00e4hent\u00e4en s\u00e4\u00e4telem\u00e4tt\u00f6m\u00e4n harjoituksen maailmaan vuotamaa j\u00e4\u00e4nn\u00f6st\u00e4. Vuosituhansien ajan se piti Varekin tasapainossa.' },
+      { type: 'p', text: 'Keth\u2019arien taitavimmat Temporaalimagian harjoittajat yrittiv\u00e4t poikkeuksellisen laajaa loitsua. Mit\u00e4 he n\u00e4kiv\u00e4t syv\u00e4n Temporaalin\u00e4yn kautta \u2014 mik\u00e4 uhka oikeutti yrityksen \u2014 ei koskaan kirjattu. Loitsu ep\u00e4onnistui katastrofaalisesti. Harjoittajat ikistyiv\u00e4t ep\u00e4s\u00e4\u00e4nn\u00f6llisesti, siirtyiv\u00e4t ajassa tai yksinkertaisesti lakkasivat olemasta. Sopimuksen yll\u00e4pit\u00e4miseen tarvittava tieto kuoli heid\u00e4n mukanaan.' },
+      { type: 'sub', text: 'Romahdus ja sen seuraukset' },
+      { type: 'p', text: 'Sopimus purkautui kuudessa\u2013kahdeksassakymmenessa vuodessa. Jokainen sukupolvi ymm\u00e4rsi hieman v\u00e4hemm\u00e4n kuin edellinen. Kaupunkivaltiot alkoivat tulkita sit\u00e4 eri tavoin, sitten sivuuttaa sen, sitten unohtaa mihin sit\u00e4 oli tarvittu. Sadan vuoden sis\u00e4ll\u00e4 se oli k\u00e4yt\u00e4nn\u00f6ss\u00e4 kuollut. T\u00e4m\u00e4 on tapahtuma, jota Tuhkaliitto kutsuu Katkokseksi. He ovat oikeassa, ett\u00e4 jokin s\u00e4rkyi. He ovat v\u00e4\u00e4r\u00e4ss\u00e4 siit\u00e4, mik\u00e4 se oli.' },
+      { type: 'p', text: 'Ilman Sopimusta magian harjoittamisesta tuli s\u00e4\u00e4telem\u00e4t\u00f6nt\u00e4 ensimm\u00e4ist\u00e4 kertaa vuosituhansiin. Keth\u2019arit vet\u00e4ytyiv\u00e4t eristyksiins\u00e4. Ihmiskunnat nousivat tyhji\u00f6\u00f6n. Lohik\u00e4\u00e4rmeet katsoivat kaikkea eiv\u00e4tk\u00e4 sanoneet mit\u00e4\u00e4n.' },
+      { type: 'sub', text: 'Nykyaika' },
+      { type: 'p', text: 'Kymmenen fraktiota, jotka muokkaavat Varekia t\u00e4n\u00e4\u00e4n, nousivat t\u00e4st\u00e4 murtuneesta historiasta. Ter\u00e4svaltaistuin vakiinnutti ihmisten alueen voimalla ja byrokratialla. Vartijat valitsivat kurin jumalallisuuden sijaan. Tuhkaliitto rakensi vilpitt\u00f6m\u00e4n teologian virheelliselle metafysiikalle. Orjantappuraverkoston otti vastaan kaikki, jotka muut fraktiot hylk\u00e4siv\u00e4t. Jokainen fraktio on eri vastaus samaan kysymykseen: mit\u00e4 teet, kun maailmassa ei ole jumalia, ei viitekehyst\u00e4, eik\u00e4 ket\u00e4\u00e4n vastuussa?' },
+      { type: 'quote', text: 'Historia Varekissa ei ole tarina. Se on kokoelma ristiriitoja, puolittain palaneita k\u00e4sikirjoituksia ja sellaisten asioiden hiljaisuutta, jotka ovat tarpeeksi vanhoja tiet\u00e4\u00e4kseen paremmin.' }
+    ],
+    lore_awakened: [
+      { type: 'p', text: 'Noin vuosisata sitten jokin muuttui. Olennot, jotka olivat olleet petoja maailman alusta, alkoivat ajatella. Alkoivat puhua. Alkoivat olla.' },
+      { type: 'sub', text: 'Kyllysteisyys' },
+      { type: 'p', text: 'Vuosisatojen kuluessa magian kumulatiivinen k\u00e4ytt\u00f6 j\u00e4tti j\u00e4\u00e4nn\u00f6ksen maailmaan. Jokainen loitsu j\u00e4tt\u00e4\u00e4 j\u00e4ljen \u2014 tutkijat vertaavat sit\u00e4 suolaan maaperss\u00e4. Noin sata vuotta sitten manan pit\u00e4suus ylitti kynnyksen. Mik\u00e4\u00e4n yksitt\u00e4inen tapahtuma ei laukaissut sit\u00e4. Maailma yksinkertaisesti reagoi siihen, mit\u00e4 siihen oli kaadettu vuosisatojen ajan.' },
+      { type: 'p', text: 'Tuhkaliiton kolmesataavuotinen kampanja magian tukahduttamiseksi saattoi suoraan kiihdytt\u00e4\u00e4 t\u00e4t\u00e4. Maan alle ajetut harjoittajat ty\u00f6skentelev\u00e4t pel\u00e4ss\u00e4\u00e4n ja kiireess\u00e4. Paniikinalainen magia on huolimatonta magiaa. Huolimaton magia vuotaa enemm\u00e4n j\u00e4\u00e4nn\u00f6st\u00e4. Instituutio, joka eniten pelk\u00e4si magian korruptiota, saattoi aiheuttaa sen juuri taistelemalla sit\u00e4 vastaan.' },
+      { type: 'sub', text: 'Mit\u00e4 her\u00e4\u00e4minen on' },
+      { type: 'p', text: 'Harvinaisin, ennalta-arvaamattomin v\u00e4liajoin olento, jonka pit\u00e4isi olla pelkk\u00e4\u00e4 vaistoista ja n\u00e4lk\u00e4\u00e4, muuttuu joksikin. Puhe saapuu. Sitten muisti. Sitten itsetietoisuuden hirvitt\u00e4v\u00e4 paino \u2014 mukaan lukien muisto siit\u00e4, mit\u00e4 he olivat ennen.' },
+      { type: 'p', text: 'Fyysisesti he ovat muuttumattomia \u2014 her\u00e4nnyt minotauri on yh\u00e4 valtava, her\u00e4nnyll\u00e4 harpyijalla on yh\u00e4 siivet ja kynnet. Henkisesti he ovat t\u00e4ysin tietoisia: kieli, tunteet, muisti, itsem\u00e4\u00e4r\u00e4\u00e4misoikeus.' },
+      { type: 'sub', text: 'Tunnetut her\u00e4nneet tyypit' },
+      { type: 'table', rows: [
+        ['Minotaurit', 'Yleisimpi\u00e4. Usein fyysisesti voimakkaita, usein lempe\u00e4it\u00e4. Hakeutuvat k\u00e4sit\u00f6iden, maanviljelyn ja yksin\u00e4isyyden pariin.'],
+        ['Harpyijat', 'Taipumus eristykseen. \u00c4\u00e4net, joilla kerran houkuteltiin, kantavat nyt kielt\u00e4 \u2014 joillekin t\u00e4m\u00e4 on siet\u00e4m\u00e4t\u00f6nt\u00e4.'],
+        ['Peikot', 'Hitaita puhumaan, syv\u00e4llisi\u00e4 ajattelijoita. Vaeltavat usein vuosia ennen yhteiskuntaan liittymist\u00e4.'],
+        ['Jotunit', 'Jotkut ovat integroituneet ty\u00f6rooleihin suvaitsevaisissa kaupungeissa. Usein hyv\u00e4ksik\u00e4ytettyj\u00e4.'],
+        ['Gorgonit', '\u00c4\u00e4rimm\u00e4isen harvinaisia. Her\u00e4nnyt gorgoni on yksi vaarallisimmista olennoista \u2014 ei ilke\u00e4mielisyydest\u00e4, vaan surusta.'],
+        ['Mantiikorat', 'Muutamat tunnetut el\u00e4v\u00e4t yksin. Kukaan ei ole yritt\u00e4nyt yhteiskuntaa.']
+      ]},
+      { type: 'sub', text: 'Maailman reaktio' },
+      { type: 'p', text: 'Jokainen fraktio n\u00e4kee her\u00e4nneet eri tavoin. Tuhkaliitto kutsuu heit\u00e4 \u201ckorruptioksi\u201d ja metsst\u00e4\u00e4 armotta. Orjantappuraverkosto kutsuu sit\u00e4 \u201cher\u00e4\u00e4miseksi\u201d kunnioituksella. Rautaverholiitto kutsuu sit\u00e4 \u201cmuutokseksi\u201d ja sopeutuu. Tavalliset ihmiset reagoivat koko inhimillisell\u00e4 kirjolla \u2014 pelko, uteliaisuus, s\u00e4\u00e4li, ihailu, yst\u00e4vyys, viha.' },
+      { type: 'quote', text: 'K\u00e4\u00e4nnyt kulman takaa torilla ja siell\u00e4 on minotauri hoitamassa kukkakojua. H\u00e4n ei katso yl\u00f6s. H\u00e4n nyppii kuolleita ter\u00e4lehti\u00e4 ruusuista valtavilla, huolellisilla k\u00e4sill\u00e4\u00e4n. Maailma ei pys\u00e4htynyt t\u00e4m\u00e4n takia. Se ei pys\u00e4hdy sinunk\u00e4\u00e4n takiasi.' }
+    ],
+    footer_l: 'Varekin fraktiot \u2014 Observatorio',
+    footer_r: 'Navigaattori'
+  }
+};
+
+var FACTIONS = [
+  {
+    id: 'vigil',
+    icon: '\u2694\uFE0F',
+    name: 'The Order of the Undying Vigil',
+    subtitle: 'The Vigil',
+    type: 'Knight order with temple headquarters',
+    tags: ['Discipline', 'The Code', 'Secular'],
+    quote: 'No god told us to stand here. We stood here anyway. That is the difference between faith and discipline.',
+    identity: 'A knight order built around a temple \u2014 not to any god, but to The Code itself. They believe that in the absence of divine power, mortal discipline is the only force holding Varek from collapse. The temple houses the Undying Flame, a fire kept burning continuously since the Order\u2019s founding \u2014 not divine light, but the continuity of human commitment.',
+    dark: 'The romanticised image is disciplined knights protecting the innocent. The reality: commoners receive theoretical protection at best. Noble-born Knight Brothers outrank common-born Sergeant Brothers regardless of merit. The Code says \u201cprotect the weak\u201d but the Vigil protects its own interests first. Most who begin the fourteen-year path never complete it.',
+    tensions: [
+      'Noble-born vs common-born: Sergeant Brothers are respected but barred from command above Commander',
+      'The Code says \u201cprotect the weak\u201d but in practice the Order protects its own holdings first',
+      'Romanticised self-image vs the messy reality of institutional politics'
+    ],
+    relations: [
+      { faction: 'Bleached Court', type: 'enemy', note: 'Genuine, visceral hatred. The Court represents everything the Vigil defines itself against.' },
+      { faction: 'Ashen Covenant', type: 'neutral', note: 'Uneasy common ground. Both value discipline but disagree on everything else.' },
+      { faction: 'Steel Throne', type: 'warm', note: 'Tense alliance of convenience. The Throne needs the Vigil\u2019s military strength.' },
+      { faction: 'Thornbound', type: 'cold', note: 'The Vigil sees disorder. The Thornbound see oppression.' }
+    ]
+  },
+  {
+    id: 'bleached_court',
+    icon: '\uD83E\uDDDB',
+    name: 'The Bleached Court',
+    subtitle: 'The Pale Throne',
+    type: 'Vampire aristocracy \u2014 openly ruled territory, eternal decadence',
+    tags: ['Undead', 'Aristocracy', 'Necromancy'],
+    quote: 'You will die, and your children will die, and their children after them. We find this neither tragic nor comforting. We find it... quaint.',
+    identity: 'Immortal aristocrats who have had centuries to become the most tedious, self-important, insufferably cultured people in Varek. They are not the shadowy horror in the crypt \u2014 they are the host of the dinner party that lasts until dawn, where at some point you realise you are the only person in the room with a pulse. They will quote philosophy at you while looking at you the way a collector looks at a pinned butterfly.',
+    dark: 'Blood age determines rank: Old Blood (500+ years, perhaps a dozen remain), High Blood, New Blood, and The Bled \u2014 mortals who serve hoping to be turned, some waiting decades, never chosen. The living residents of Court territory are \u201csubjects, not slaves.\u201d The distinction matters enormously to the Court and not at all to the subjects. Death tithes are collected from the living population.',
+    tensions: [
+      'Old Blood vs New Blood snobbery \u2014 newer vampires will never fully outrank older ones regardless of merit',
+      'Performance of culture vs substance \u2014 eternity breeds decadence and stagnation',
+      'The Court cannot reproduce naturally \u2014 sterility is their unspoken existential threat'
+    ],
+    relations: [
+      { faction: 'Ashen Covenant', type: 'enemy', note: 'Mutual, absolute hatred. The Covenant considers the Court an abomination.' },
+      { faction: 'The Vigil', type: 'enemy', note: 'The Vigil\u2019s hatred is genuine and visceral. The Court finds this amusing.' },
+      { faction: 'Ironveil Compact', type: 'ally', note: 'Excellent business partners. The Compact doesn\u2019t care what you are if your coin is good.' },
+      { faction: 'Wandering Houses', type: 'warm', note: 'Reliable, discreet, and expensive. The Court appreciates all three qualities.' }
+    ]
+  },
+  {
+    id: 'greenskin_clans',
+    icon: '\uD83C\uDF3F',
+    name: 'The Greenskin Clans',
+    subtitle: 'The Green Road',
+    type: 'Nomadic confederation, shamanic tradition, council-governed',
+    tags: ['Nomadic', 'Shamanic', 'Naturalism'],
+    quote: 'The land does not belong to you. You belong to the land. Walk it well.',
+    identity: 'A nomadic confederation following ancestral migratory routes called the Green Roads. Governed by clan councils and shamanic tradition, not kings. Their magic is Naturalism \u2014 sacred, not academic. Membership is earned by proving your worth to a clan, not by blood. They predate most of Varek\u2019s recorded history and consider settled civilisation a temporary experiment.',
+    dark: 'The Mentalism ban is absolute: use Mentalism in Greenskin territory and you are exiled immediately, no discussion, no appeal. This rigid prohibition sits uncomfortably with their otherwise flexible culture. Loss of a clan\u2019s totem is an existential crisis \u2014 without it, the clan\u2019s identity fractures.',
+    tensions: [
+      'Rigid Mentalism ban vs their otherwise adaptive, freedom-oriented culture',
+      'Nomadism vs resource management \u2014 the Green Roads are not infinite',
+      'Oral tradition means history is what the elders remember it to be'
+    ],
+    relations: [
+      { faction: 'Thornbound', type: 'ally', note: 'Closest allies. Both live on the road, both reject fixed hierarchy.' },
+      { faction: 'Steel Throne', type: 'enemy', note: 'The Throne expands; the Clans\u2019 roads shrink. Fundamental conflict.' },
+      { faction: 'Ashen Covenant', type: 'enemy', note: 'The Covenant has persecuted the Clans for centuries. The feeling is mutual.' },
+      { faction: 'Ironveil Compact', type: 'warm', note: 'Trade partners. The Compact buys what the Clans gather.' }
+    ]
+  },
+  {
+    id: 'athenaeum',
+    icon: '\uD83D\uDCDA',
+    name: 'The Athenaeum',
+    subtitle: 'The Tower',
+    type: 'Mage order \u2014 academy, library, and fortress',
+    tags: ['Magic', 'Knowledge', 'Research'],
+    quote: 'We do not seek power. We seek understanding. That the two are indistinguishable is not our problem.',
+    identity: 'A tower-complex built on a high-mana site, expanded over three centuries into the greatest concentration of magical knowledge in Varek. Not military, not government \u2014 scholars who happen to be extraordinarily dangerous. Politically neutral by policy, which makes everyone nervous. They study the Awakening (mana saturation turning monsters sapient) with fascination that borders on obsession.',
+    dark: 'Their neutrality is a luxury purchased with concentrated power. They hoard knowledge behind the excuse of \u201cresponsible stewardship.\u201d Their Awakened research subjects participate \u201cmostly voluntarily.\u201d The Tower sees the world as a collection of problems to be studied, not people to be helped.',
+    tensions: [
+      'Arrogance masked as scholarship \u2014 they believe they deserve to decide what others should know',
+      'Obsession with the Awakening: mana saturation is turning monsters sapient, and the Athenaeum finds this thrilling',
+      'Concentrated power with weak projection \u2014 powerful in their tower, fragile beyond it'
+    ],
+    relations: [
+      { faction: 'Ashen Covenant', type: 'enemy', note: 'The Covenant considers unregulated magic an existential threat. The Athenaeum considers the Covenant ignorant.' },
+      { faction: 'Keth\u2019ari Remnant', type: 'cold', note: 'Scholarly rivalry. The Remnant has knowledge the Athenaeum desperately wants and won\u2019t share.' },
+      { faction: 'Bleached Court', type: 'neutral', note: 'Mutual fascination. The Court has centuries of accumulated magical practice.' },
+      { faction: 'Wandering Houses', type: 'warm', note: 'The Houses supply rare texts. The Athenaeum pays well.' }
+    ]
+  },
+  {
+    id: 'ashen_covenant',
+    icon: '\uD83D\uDD25',
+    name: 'The Ashen Covenant',
+    subtitle: 'The Purifying Flame',
+    type: 'Theocratic inquisition \u2014 sincere belief with zero divine validation',
+    tags: ['Inquisition', 'Theology', 'Purification'],
+    quote: 'The Flame waits. We are not patient because we choose to be. We are patient because the alternative is despair.',
+    identity: 'A theocratic order built on a theology that is sincerely held and factually wrong. They believe in the Severance \u2014 that a divine presence once existed, was wounded, and will return if mortals purify the world of corruption. They have waited three centuries for a divine sign. None has come. Six senior theologians know the silence continues. The institution is now stronger than the theology it was built to serve.',
+    dark: 'Necromancy in Covenant territory is not a crime \u2014 it is a category of corruption. No trial, no bounty, no surrender accepted. Two hundred years without a single exception. Their Doctrine of Purified Arts classifies all magic as sanctioned, tolerated, or condemned. Inquisitors have the authority to execute on suspicion. The gap between sincere belief and institutional violence is where the Covenant lives.',
+    tensions: [
+      'Three centuries of absolute certainty without a single divine sign to validate it',
+      'Six senior theologians privately know the silence continues \u2014 and cannot say so',
+      'The institution that was built to serve the theology has become more important than the theology itself'
+    ],
+    relations: [
+      { faction: 'Bleached Court', type: 'enemy', note: 'Absolute hatred. The Court is undead aristocracy \u2014 everything the Covenant exists to purify.' },
+      { faction: 'Steel Throne', type: 'neutral', note: 'Coexistence. The Throne tolerates the Covenant\u2019s zeal because the alternative is fighting it.' },
+      { faction: 'The Vigil', type: 'neutral', note: 'Reluctant common ground. Both value discipline. Neither trusts the other.' },
+      { faction: 'Greenskin Clans', type: 'enemy', note: 'The Covenant views shamanic tradition as spiritual corruption to be cleansed.' }
+    ]
+  },
+  {
+    id: 'steel_throne',
+    icon: '\u2655',
+    name: 'The Steel Throne',
+    subtitle: 'The Weight That Holds the Shape',
+    type: 'Feudal monarchy \u2014 the largest human political structure in Varek',
+    tags: ['Monarchy', 'Feudal', 'Espionage'],
+    quote: 'The realm does not require your love. It requires your obedience. These are cheaper to maintain.',
+    identity: 'The largest human kingdom, held together by blood succession, institutional machinery, and the shared understanding that the alternative is worse. The king matters less than the system. Ironhall, the capital, has grown from a warlord\u2019s fortress into a sprawling administrative complex. The Throne\u2019s strength is not military brilliance \u2014 it is the sheer weight of bureaucracy, tradition, and the collective unwillingness to imagine something different.',
+    dark: 'The Throne officially bans Necromancy, Mentalism, and Entropy. Its intelligence services \u2014 the Quiet Office, the Ashen Hand, the Seal \u2014 use all three. Serfs are bound to the land, not legally slaves, but the distinction is academic. Awakened creatures are placed in dangerous roles: mine canaries, border scouts, experimental subjects. Reform is taboo. The gap between official policy and operational truth is enormous and deliberate.',
+    tensions: [
+      'Three hidden intelligence agencies using the exact magic the Throne publicly bans',
+      'Serf system: bound to the land, not \u201cslaves\u201d \u2014 a distinction that matters only to lawyers',
+      'Awakened placed in dangerous roles: the kingdom uses sapient monsters as disposable assets'
+    ],
+    relations: [
+      { faction: 'The Vigil', type: 'warm', note: 'Rival allies. The Throne needs the Vigil\u2019s military. The Vigil needs the Throne\u2019s legitimacy.' },
+      { faction: 'Ashen Covenant', type: 'neutral', note: 'Tolerated. The Covenant\u2019s zeal is useful for social control.' },
+      { faction: 'Greenskin Clans', type: 'enemy', note: 'Expansion conflict. Every new road is a Green Road destroyed.' },
+      { faction: 'Bleached Court', type: 'cold', note: 'Territorial friction. The Throne considers vampires an affront; the Court considers the Throne temporary.' }
+    ]
+  },
+  {
+    id: 'kethhari_remnant',
+    icon: '\uD83C\uDF19',
+    name: 'The Keth\u2019ari Remnant',
+    subtitle: 'The Last Practitioners',
+    type: 'Elven scholarly remnant \u2014 survivors of a civilisation that broke the world',
+    tags: ['Elven', 'Ancient', 'Temporal Magic'],
+    quote: 'We remember what we did. That is our punishment. We remember what we knew. That is yours.',
+    identity: 'The Keth\u2019ari once had a universal framework for understanding magic \u2014 the Accord. They broke it, and the world broke with it. What remains is 5\u20138 isolated walled enclaves in remote terrain, populated by scholars who refuse to explain what happened, refuse to share what they know, and refuse to stop feeling responsible. They are the keepers of sealed pre-collapse texts that could reshape magical understanding. They choose silence.',
+    dark: 'The Ashen Covenant\u2019s entire theology \u2014 the Severance, the divine wound \u2014 is based on a misunderstanding of a Keth\u2019ari error. The Remnant knows this and says nothing. The Temporal school of magic is sealed by their decree. There are rumours of a Survivor \u2014 a single Keth\u2019ari who used Temporal magic and still lives, experiencing time in a way no one else can understand. Whether silence is mercy or cowardice is the question that defines them.',
+    tensions: [
+      'The Covenant\u2019s theology is built on a Keth\u2019ari mistake \u2014 and the Remnant stays silent about it',
+      'The Temporal school is sealed. The rumoured Survivor may be proof it shouldn\u2019t be.',
+      'Whether their silence protects the world or merely protects their guilt'
+    ],
+    relations: [
+      { faction: 'Athenaeum', type: 'cold', note: 'Scholarly rivalry. The Athenaeum wants what the Remnant has and resents being refused.' },
+      { faction: 'Ashen Covenant', type: 'neutral', note: 'The Covenant doesn\u2019t know the Remnant holds the key to their theology\u2019s foundations.' },
+      { faction: 'Wandering Houses', type: 'neutral', note: 'The Houses know the Remnant has sealed texts. They don\u2019t try to steal them. This earns grudging respect.' },
+      { faction: 'Ironveil Compact', type: 'neutral', note: 'The Remnant rarely trades. When they do, the Compact is their preferred partner.' }
+    ]
+  },
+  {
+    id: 'wandering_houses',
+    icon: '\uD83D\uDDDD\uFE0F',
+    name: 'The Wandering Houses',
+    subtitle: 'The Market That Remembers',
+    type: 'Federated network of information brokers, couriers, and smugglers',
+    tags: ['Intelligence', 'Smuggling', 'Archives'],
+    quote: 'We sell what we know. We keep what we learn. These are different things, and the difference is why we are still here.',
+    identity: 'Not a nation but a network. The Wandering Houses operate in every faction\u2019s territory, selling information, moving contraband, carrying messages, and maintaining the most comprehensive intelligence archive in Varek. Six centuries of accumulated secrets, sealed texts, and relationship maps. They have no fixed code written down, but their unwritten rules are the strictest in Varek: break trust once and you\u2019re done.',
+    dark: 'Their neutrality is profitable, not principled. They serve clients with contrary interests simultaneously and consider this a feature. Their sealed collection of pre-collapse texts has never been sold \u2014 not because they\u2019re noble, but because knowledge kept is power retained. The Archivists, who manage the sealed collection, answer only to the Charter and are the most feared people in a faction of feared people.',
+    tensions: [
+      'No written code but the strictest enforcement in Varek \u2014 a paradox they do not explain',
+      'Serving clients with contrary interests simultaneously and calling it neutrality',
+      'The sealed texts create leverage they can never use without destroying the trust that sustains them'
+    ],
+    relations: [
+      { faction: 'Steel Throne', type: 'warm', note: 'Most common client. The Throne\u2019s intelligence services are major customers.' },
+      { faction: 'Bleached Court', type: 'warm', note: 'Excellent clients. Immortals need discreet, reliable service. Price is no object.' },
+      { faction: 'Thornbound', type: 'warm', note: 'History of smuggling Awakened to safety through Thornbound networks.' },
+      { faction: 'Athenaeum', type: 'warm', note: 'Rare texts for good coin. A clean, profitable relationship.' }
+    ]
+  },
+  {
+    id: 'thornbound',
+    icon: '\uD83C\uDF39',
+    name: 'The Thornbound',
+    subtitle: 'The Road That Takes You In',
+    type: 'Dispersed mutual-aid network \u2014 no territory, no hierarchy, no judgement',
+    tags: ['Anarchist', 'Sanctuary', 'Awakened'],
+    quote: 'You\u2019re here. That\u2019s enough. Don\u2019t tell us what you were. We don\u2019t care.',
+    identity: 'Not a faction in the traditional sense \u2014 a network of mobile camps and unmarked roads that take in anyone. Criminals, refugees, Awakened monsters, deserters, the desperate. They reject hierarchy, reject judgement, reject the premise that survival should require permission. Two centuries of existence despite the Ashen Covenant\u2019s repeated attempts to destroy them.',
+    dark: 'Accepting everyone means accepting people who have done terrible things. The Thornbound\u2019s refusal to judge means they have no framework for handling internal harm \u2014 when a member hurts another, the response is improvised. Their leaders (Rootkeepers, Walkers, Thorns) reject the word \u201cleader\u201d while performing every function of one. They are the faction that most honestly represents Varek\u2019s broken world, and the one least equipped to fix it.',
+    tensions: [
+      'Reject hierarchy but must make decisions \u2014 Rootkeepers emerge whether they want them or not',
+      'Accept anyone including criminals and the genuinely dangerous \u2014 no moral framework for internal harm',
+      'Absolute acceptance of Awakened creatures, including those who were predators before sapience'
+    ],
+    relations: [
+      { faction: 'Greenskin Clans', type: 'ally', note: 'Closest allies. Both live on the road, both honour the outsider.' },
+      { faction: 'Ashen Covenant', type: 'enemy', note: 'The Covenant has tried to destroy the Thornbound for two centuries. They have failed.' },
+      { faction: 'Wandering Houses', type: 'warm', note: 'The Houses smuggle Awakened to Thornbound camps. Mutual respect.' },
+      { faction: 'The Vigil', type: 'cold', note: 'The Vigil sees lawlessness. The Thornbound see another institution that protects itself first.' }
+    ]
+  },
+  {
+    id: 'ironveil_compact',
+    icon: '\u2696\uFE0F',
+    name: 'The Ironveil Compact',
+    subtitle: 'The Ledger and the Road',
+    type: 'Merchant confederation \u2014 coin-driven morality, commercial neutrality',
+    tags: ['Trade', 'Commerce', 'Neutrality'],
+    quote: 'The ledger does not lie. It does not forgive. It does not care what you believe. It only asks: can you pay?',
+    identity: 'A string of trade cities along major routes, governed by exchange halls rather than castles. The Compact runs on a single principle: the ledger. Commerce is law. Wealth replaces bloodline as hierarchy. They are the most diverse population in Varek because coin has no race. Politically neutral because war is bad for business and they will sell to anyone who can pay.',
+    dark: 'Slavery is technically legal in Compact cities (classified as \u201cinefficient\u201d rather than immoral) and the Compact trades with slavers externally while banning it internally. Their progressive appearance conceals a profoundly conservative effect: the system works for those with money. Mentalism is used but never admitted. Their neutrality enables every atrocity committed by their clients.',
+    tensions: [
+      'Progressive appearance, conservative effect \u2014 diversity through commerce means wealth is the only real equality',
+      'Slavery banned internally but traded with externally \u2014 classified as \u201cinefficient,\u201d not wrong',
+      'Amoral neutrality means their coin funds every faction\u2019s worst impulses and they call it business'
+    ],
+    relations: [
+      { faction: 'Bleached Court', type: 'ally', note: 'Excellent clients. The Court pays well and always pays on time. Eternity builds credit.' },
+      { faction: 'Steel Throne', type: 'warm', note: 'Major trade partner. The Throne needs the Compact\u2019s roads more than it admits.' },
+      { faction: 'Wandering Houses', type: 'warm', note: 'Complementary services. The Compact moves goods; the Houses move information.' },
+      { faction: 'Greenskin Clans', type: 'warm', note: 'Reliable suppliers of gathered materials. The Compact values the trade relationship.' }
+    ]
+  }
+];
+
+// Shortened names for the matrix
+var SHORT = {
+  'vigil': 'Vigil',
+  'bleached_court': 'Court',
+  'greenskin_clans': 'Clans',
+  'athenaeum': 'Athenaeum',
+  'ashen_covenant': 'Covenant',
+  'steel_throne': 'Throne',
+  'kethhari_remnant': 'Keth\u2019ari',
+  'wandering_houses': 'Houses',
+  'thornbound': 'Thornbound',
+  'ironveil_compact': 'Compact'
+};
+
+// Relationship matrix data: [row][col] = class
+// Order matches FACTIONS array index
+var REL = [
+//         Vig  Crt  Cln  Ath  Cov  Thr  Ket  Hou  Tho  Com
+/*Vig*/ [  's', 'e', 'n', 'n', 'n', 'w', 'n', 'n', 'c', 'n' ],
+/*Crt*/ [  'e', 's', 'c', 'n', 'e', 'c', 'n', 'w', 'c', 'a' ],
+/*Cln*/ [  'n', 'c', 's', 'n', 'e', 'e', 'n', 'n', 'a', 'w' ],
+/*Ath*/ [  'n', 'n', 'n', 's', 'e', 'n', 'c', 'w', 'n', 'n' ],
+/*Cov*/ [  'n', 'e', 'e', 'e', 's', 'n', 'n', 'c', 'e', 'n' ],
+/*Thr*/ [  'w', 'c', 'e', 'n', 'n', 's', 'n', 'w', 'c', 'w' ],
+/*Ket*/ [  'n', 'n', 'n', 'c', 'n', 'n', 's', 'n', 'n', 'n' ],
+/*Hou*/ [  'n', 'w', 'n', 'w', 'c', 'w', 'n', 's', 'w', 'w' ],
+/*Tho*/ [  'c', 'c', 'a', 'n', 'e', 'c', 'n', 'w', 's', 'n' ],
+/*Com*/ [  'n', 'a', 'w', 'n', 'n', 'w', 'n', 'w', 'n', 's' ]
+];
+var REL_CLASS = { 's': 'r-self', 'a': 'r-ally', 'w': 'r-warm', 'n': 'r-neutral', 'c': 'r-cold', 'e': 'r-tense' };
+var REL_LABEL = { 's': '\u2014', 'a': 'Ally', 'w': 'Warm', 'n': '\u00B7', 'c': 'Cold', 'e': 'Hostile' };
+
+function renderLoreContent(items) {
+  var html = '';
+  items.forEach(function(item) {
+    if (item.type === 'p') {
+      html += '<p>' + item.text + '</p>';
+    } else if (item.type === 'sub') {
+      html += '<div class="lore-subhead">' + item.text + '</div>';
+    } else if (item.type === 'quote') {
+      html += '<blockquote>' + item.text + '</blockquote>';
+    } else if (item.type === 'table') {
+      html += '<table class="awakened-table">';
+      item.rows.forEach(function(row) {
+        html += '<tr><td>' + row[0] + '</td><td>' + row[1] + '</td></tr>';
+      });
+      html += '</table>';
+    }
+  });
+  return html;
+}
+
+function buildLore() {
+  var tx = T[LANG];
+  document.getElementById('lore-world-title').textContent = tx.lore_world_title;
+  document.getElementById('lore-awakened-title').textContent = tx.lore_awakened_title;
+  document.getElementById('lore-world-body').innerHTML = renderLoreContent(tx.lore_world);
+  document.getElementById('lore-awakened-body').innerHTML = renderLoreContent(tx.lore_awakened);
+}
+
+function toggleLore(which) {
+  var toggle = document.getElementById('lore-' + which + '-toggle');
+  var body = document.getElementById('lore-' + which + '-body');
+  toggle.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+function buildGrid() {
+  var grid = document.getElementById('faction-grid');
+  grid.innerHTML = '';
+  var tx = T[LANG];
+  FACTIONS.forEach(function(f, i) {
+    var card = document.createElement('div');
+    card.className = 'faction-card';
+    card.innerHTML =
+      '<span class="faction-icon">' + f.icon + '</span>' +
+      '<div class="faction-name">' + f.name + '</div>' +
+      '<div class="faction-subtitle">' + f.subtitle + '</div>' +
+      '<div class="faction-type">' + f.type + '</div>' +
+      '<div class="faction-quote">\u201C' + f.quote + '\u201D</div>' +
+      '<div class="faction-tags">' + f.tags.map(function(t){ return '<span class="faction-tag">' + t + '</span>'; }).join('') + '</div>' +
+      '<span class="faction-expand">' + tx.details + '</span>';
+    card.addEventListener('click', function(){ openModal(i); });
+    grid.appendChild(card);
+  });
+}
+
+function openModal(idx) {
+  var f = FACTIONS[idx];
+  var tx = T[LANG];
+  var html =
+    '<button class="modal-close" id="modal-close">\u00D7</button>' +
+    '<span class="faction-icon">' + f.icon + '</span>' +
+    '<div class="faction-name">' + f.name + '</div>' +
+    '<div class="faction-subtitle">' + f.subtitle + ' \u2014 ' + f.type + '</div>' +
+    '<div class="modal-quote">\u201C' + f.quote + '\u201D</div>' +
+    '<div class="modal-section"><h3>' + tx.lbl_identity + '</h3><p>' + f.identity + '</p></div>' +
+    '<div class="modal-section"><h3>' + tx.lbl_dark + '</h3><p>' + f.dark + '</p></div>' +
+    '<div class="modal-section"><h3>' + tx.lbl_tensions + '</h3>' +
+      f.tensions.map(function(t){ return '<div class="tension-item">' + t + '</div>'; }).join('') +
+    '</div>' +
+    '<div class="modal-section"><h3>' + tx.lbl_relations + '</h3><div class="rel-grid">' +
+      f.relations.map(function(r){
+        var cls = r.type === 'ally' ? 'rel-ally' : r.type === 'enemy' ? 'rel-enemy' : r.type === 'warm' ? 'rel-ally' : r.type === 'cold' ? 'rel-enemy' : 'rel-neutral';
+        var lbl = r.type === 'ally' ? tx.lbl_ally : r.type === 'enemy' ? tx.lbl_enemy : r.type === 'warm' ? tx.lbl_ally : r.type === 'cold' ? tx.lbl_enemy : tx.lbl_neutral;
+        return '<div class="rel-item ' + cls + '"><span class="rel-label">' + lbl + '</span><span class="rel-name">' + r.faction + '</span><br><span style="color:#5a5468;font-size:.78rem">' + r.note + '</span></div>';
+      }).join('') +
+    '</div></div>';
+
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal').classList.add('active');
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+function buildMatrix() {
+  var table = document.getElementById('rel-matrix');
+  var html = '<tr><th></th>';
+  FACTIONS.forEach(function(f){ html += '<th>' + SHORT[f.id] + '</th>'; });
+  html += '</tr>';
+  FACTIONS.forEach(function(f, i) {
+    html += '<tr><th class="row-head">' + SHORT[f.id] + '</th>';
+    REL[i].forEach(function(r) {
+      html += '<td class="' + REL_CLASS[r] + '">' + REL_LABEL[r] + '</td>';
+    });
+    html += '</tr>';
+  });
+  table.innerHTML = html;
+}
+
+function setLang(lang) {
+  LANG = lang;
+  var tx = T[lang];
+  document.getElementById('hdr-title').textContent = tx.title;
+  document.getElementById('hdr-subtitle').textContent = tx.subtitle;
+  document.getElementById('intro-text').textContent = tx.intro;
+  document.getElementById('back-link').textContent = tx.back;
+  document.getElementById('section-factions').textContent = tx.section_factions;
+  document.getElementById('section-relations').textContent = tx.section_relations;
+  document.getElementById('footer-l').textContent = tx.footer_l;
+  document.getElementById('footer-r').textContent = tx.footer_r;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+  buildLore();
+  buildGrid();
+}
+
+document.querySelectorAll('.lang-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){ setLang(btn.dataset.lang); });
+});
+
+buildLore();
+buildGrid();
+buildMatrix();
+</script>
+</body>
+</html>
