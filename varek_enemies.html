@@ -405,6 +405,31 @@ const ENEMIES = [
     cameraPos: { x: 0, y: 1.0, z: 3.0 },
     cameraTarget: { x: 0, y: 0.8, z: 0 },
   },
+  {
+    id: 'campfire',
+    name: 'Campfire',
+    type: 'Camp Structure',
+    category: 'structure',
+    icon: '\u{1F525}',
+    iconBg: '#2a1a0a',
+    model: null,
+    health: null,
+    damage: null,
+    speed: null,
+    attackRange: null,
+    attackCooldown: null,
+    detectionRange: null,
+    perception: null,
+    xpReward: null,
+    stationType: 'Crafting Station',
+    xpMultiplier: '1.0x',
+    flattenRadius: '3.5 units',
+    lightRange: '10m warm, 4m ground glow',
+    features: 'Cooking, warmth, light source',
+    lore: 'A ring of stones and a few dry logs — that is all it takes to push back the dark. The fire flattens the earth beneath it over time, packing dirt into a hard circle where nothing grows. Travellers know a good campsite by the colour of the ground: black and flat means someone survived here long enough to keep a fire burning.',
+    cameraPos: { x: 0, y: 0.8, z: 2.0 },
+    cameraTarget: { x: 0, y: 0.3, z: 0 },
+  },
 ];
 
 // ── Three.js Setup ──────────────────────────────────────────────────
@@ -679,8 +704,11 @@ function renderSidebar() {
     });
   }
 
+  const structures = ENEMIES.filter(e => e.category === 'structure');
+
   addSection('Creatures', enemies);
   if (npcs.length > 0) addSection('NPCs', npcs);
+  if (structures.length > 0) addSection('Structures', structures);
 }
 
 function selectEnemy(id) {
@@ -702,6 +730,38 @@ function selectEnemy(id) {
 function renderStats(enemy) {
   const maxHealth = 150; // for bar scaling
   const panel = document.getElementById('stats-panel');
+
+  if (enemy.category === 'structure') {
+    panel.innerHTML = `
+      <h4>${enemy.name}</h4>
+      <div class="stat-row">
+        <span class="stat-label">Type</span>
+        <span class="stat-value">${enemy.type}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Station</span>
+        <span class="stat-value gold">${enemy.stationType}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">XP Multiplier</span>
+        <span class="stat-value">${enemy.xpMultiplier}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Flatten Radius</span>
+        <span class="stat-value">${enemy.flattenRadius}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Light Range</span>
+        <span class="stat-value">${enemy.lightRange}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Features</span>
+        <span class="stat-value gold">${enemy.features}</span>
+      </div>
+      <div class="lore-text">${enemy.lore}</div>
+    `;
+    return;
+  }
 
   if (enemy.category === 'npc') {
     panel.innerHTML = `
