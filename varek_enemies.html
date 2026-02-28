@@ -456,6 +456,29 @@ const ENEMIES = [
     cameraTarget: { x: 0, y: 0.7, z: 0 },
   },
   {
+    id: 'pig',
+    name: 'Pig',
+    type: 'Wildlife',
+    category: 'wildlife',
+    icon: '\u{1F437}',
+    iconBg: '#2a2018',
+    model: null,
+    health: null,
+    damage: null,
+    speed: 0.8,
+    attackRange: null,
+    attackCooldown: null,
+    detectionRange: null,
+    perception: null,
+    xpReward: null,
+    walkSpeed: 0.8,
+    wanderRadius: 8.0,
+    behaviour: 'Idle, Wander, Rooting',
+    lore: 'They root through the mud at the edge of camp, unbothered by sword or spell. No one remembers who brought them, and no one claims them. They eat what they find, sleep where they fall, and seem oddly content for creatures living at the edge of the wild. Some say a pig that stops oinking is the first sign of trouble.',
+    cameraPos: { x: 0, y: 0.4, z: 1.5 },
+    cameraTarget: { x: 0, y: 0.3, z: 0 },
+  },
+  {
     id: 'merchant',
     name: 'Travelling Merchant',
     type: 'Friendly NPC',
@@ -743,6 +766,7 @@ function renderSidebar() {
   list.innerHTML = '';
 
   const enemies = ENEMIES.filter(e => e.category === 'enemy');
+  const wildlife = ENEMIES.filter(e => e.category === 'wildlife');
   const npcs = ENEMIES.filter(e => e.category === 'npc');
 
   function addSection(title, items) {
@@ -775,6 +799,7 @@ function renderSidebar() {
   }
 
   addSection('Creatures', enemies);
+  if (wildlife.length > 0) addSection('Wildlife', wildlife);
   if (npcs.length > 0) addSection('NPCs', npcs);
 }
 
@@ -797,6 +822,30 @@ function selectEnemy(id) {
 function renderStats(enemy) {
   const maxHealth = 150; // for bar scaling
   const panel = document.getElementById('stats-panel');
+
+  if (enemy.category === 'wildlife') {
+    panel.innerHTML = `
+      <h4>${enemy.name}</h4>
+      <div class="stat-row">
+        <span class="stat-label">Type</span>
+        <span class="stat-value">${enemy.type}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Walk Speed</span>
+        <span class="stat-value">${enemy.walkSpeed}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Wander Radius</span>
+        <span class="stat-value">${enemy.wanderRadius}m</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Behaviour</span>
+        <span class="stat-value gold">${enemy.behaviour}</span>
+      </div>
+      <div class="lore-text">${enemy.lore}</div>
+    `;
+    return;
+  }
 
   if (enemy.category === 'npc') {
     panel.innerHTML = `
